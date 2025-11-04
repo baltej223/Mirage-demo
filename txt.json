@@ -1,0 +1,31 @@
+<body>
+    <a-scene embedded arjs>
+        <a-marker preset="hiro">
+            <a-box position="0 0.5 0" material="color: yellow;"></a-box>
+        </a-marker>
+        <a-entity camera></a-entity>
+    </a-scene>
+</body>
+      const gpsLog = document.getElementById('gpsLog');
+
+      function updateGPSLog(position) {
+        const lat = position.coords.latitude.toFixed(6);
+        const lng = position.coords.longitude.toFixed(6);
+        gpsLog.textContent = `Lat: ${lat}, Lng: ${lng}`;
+      }
+
+      function handleGPSError(error) {
+        console.warn(`ERROR(${error.code}): ${error.message}`);
+      }
+
+      if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(updateGPSLog, handleGPSError, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000,
+        });
+      } else {
+        gpsLog.textContent = 'Geolocation is not supported by this browser.';
+      }
+    </script>
+  </body>
