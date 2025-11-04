@@ -52,5 +52,43 @@
 
     </a-scene>
   <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"92be57dc94774deb822e7e84255b27f9","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+  <script>
+  // 🎯 Replace these with your target coordinates
+  const targetLat = 30.3515; // Example: Thapar University
+  const targetLon = 76.3630;
+  const threshold = 100; // meters within which cube appears
+
+  const cube = document.querySelector('a-box');
+
+  // Distance function (Haversine formula)
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const toRad = deg => deg * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat/2)**2 +
+              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+              Math.sin(dLon/2)**2;
+    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(pos => {
+      const { latitude, longitude } = pos.coords;
+      const distance = getDistance(latitude, longitude, targetLat, targetLon);
+
+      console.log(`📍 Distance: ${Math.round(distance)} meters`);
+
+      if (distance < threshold) {
+        cube.setAttribute('visible', true);
+      } else {
+        cube.setAttribute('visible', false);
+      }
+    }, err => console.error(err), { enableHighAccuracy: true });
+  } else {
+    alert("Geolocation not supported by this browser.");
+  }
+</script>
+
 </body>
 </html>
