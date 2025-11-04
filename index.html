@@ -8,16 +8,29 @@
   <button id="startAR"
     style="position:absolute;top:0;left:0;width:100%;height:100%;font-size:2em;">
     Tap to start AR
-  </button>
+  </button>x
 
   <a-scene
     id="scene"
     embedded
-    arjs="sourceType: webcam; debugUIEnabled: false;"
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; patternRatio: 0.9;"
+    embedded
+    renderer="antialias: true; logarithmicDepthBuffer: true;"
+    vr-mode-ui="enabled: false"
     style="display:none"
   >
-    <a-marker type="pattern" url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/data/patt.hiro">
+    <a-marker type="pattern" url="pattern-hiro.patt">
       <a-box position="0 0.5 0" material="color: red;"></a-box>
+
+              <!-- <a-entity
+          geometry="primitive: plane; width: 1.2; height: 0.4"
+          material="color: #FFD700; opacity: 0.9; side: double"
+          position="0 0.5 0"
+          class="clickable"
+          text="value: TAP TO CLAIM; align: center; color: #111; width: 4;"
+        ></a-entity> -->
+
+
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
