@@ -8,23 +8,26 @@
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 
     <!-- AR.js with location-based support -->
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.0/aframe/build/aframe-ar-nft.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.0/aframe/build/aframe-ar.js"></script>
   </head>
 
-  <body style="margin: 0; overflow: hidden;">
-    <a-scene
-      vr-mode-ui="enabled: false"
-      embedded
-      arjs="sourceType: webcam; gpsMinAccuracy: 100; debugUIEnabled: true;"
-    >
-      <!-- Add a simple object at a specific GPS coordinate -->
-      <a-box
-        color="red"
-        gps-entity-place="latitude: 30.353981; longitude: 76.368437;"
-        scale="0.3 0.3 0.3"
-      ></a-box>
+  <body>
 
-      <a-camera gps-camera rotation-reader></a-camera>
+    <a-scene
+        vr-mode-ui="enabled: false;"
+        embedded
+        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;"
+    >
+        <a-camera gps-new-camera arjs-device-orientation-controls='smoothingFactor: 0.1'></a-camera>
+
+      <a-box
+        gps-new-entity-place="latitude: 30.353912; longitude: 76.368568;"
+        color="red"
+        scale="1 1 1"
+      ></a-box>
+    
     </a-scene>
+
+
   </body>
 </html>
