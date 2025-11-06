@@ -43,27 +43,27 @@
     <!-- 📍 Button now stays visible above AR view -->
     <button id="setLocationBtn">📍 Set Target Location</button>
 
-    <a-scene
-      reflection="directionalLight: a-light[type=directional]"
-      ar-hit-test="target: #objects;"
-      renderer="colorManagement: true; exposure: 1; toneMapping: ACESFilmic"
-      shadow="type: pcfsoft"
-      xr-mode-ui="XRMode: xr"
-      embedded
-      arjs="sourceType: webcam; debugUIEnabled: false;"
-    >
-      <a-marker preset="hiro">
-        <a-box id="geo-cube" position="0 0.5 0" color="red" visible="false"></a-box>
-        <a-box position="0 -10 -2" color="blue" ></a-box>
-      </a-marker>
-      <!-- <a-entity
-      gps-entity-place="latitude: 31.633; longitude: 74.872"
-      geometry="primitive: box"
-      material="color: red"
-    ></a-entity> -->
+      <a-scene
+        reflection="directionalLight: a-light[type=directional]"
+        ar-hit-test="target: #objects;"
+        renderer="colorManagement: true; exposure: 1; toneMapping: ACESFilmic"
+        shadow="type: pcfsoft"
+        xr-mode-ui="XRMode: xr"
+        embedded
+        arjs="sourceType: webcam; debugUIEnabled: false;"
+      >
+        <a-marker preset="hiro">
+          <a-box id="geo-cube" position="0 0.5 0" color="red" visible="false"></a-box>
+          <!-- <a-box position="0 -10 -2" color="blue" ></a-box> -->
+        </a-marker>
+        <!-- <a-entity
+        gps-entity-place="latitude: 31.633; longitude: 74.872"
+        geometry="primitive: box"
+        material="color: red"
+      ></a-entity> -->
 
-      <a-entity camera></a-entity>
-    </a-scene>
+        <a-entity camera></a-entity>
+      </a-scene>
 
     <script>
       const cube = document.getElementById("geo-cube");
