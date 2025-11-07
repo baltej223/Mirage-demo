@@ -1,62 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>LoCAR Cube Placement</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- LoCAR (lightweight location-based AR) -->
-    <script type="module">
-    import"https://ar-js-org.github.io/locar.js/assets/modulepreload-polyfill-B5Qt9EMX.js";
-    import{P as m,W as u,S as f,k as g,b as p,V as h,B as D,M as v,a as x}
-    from"https://ar-js-org.github.io/locar.js/assets/locar.es-8YGvHcXJ.js";
-    const n=new m(80,window.innerWidth/window.innerHeight,.001,1e3),t=new u({canvas:document.getElementById("glscene")});t.setSize(window.innerWidth,window.innerHeight);const r=new f,o=new g(r,n),c=new p({video:{facingMode:"environment"}},null);c.on("webcamstarted",e=>{r.background=e.texture});c.on("webcamerror",e=>{alert(`Webcam error: code ${e.code} message ${e.message}`)});window.addEventListener("resize",e=>{t.setSize(window.innerWidth,window.innerHeight),n.aspect=window.innerWidth/window.innerHeight,n.updateProjectionMatrix()});let s=!0,i=new h(n);i.on("deviceorientationgranted",e=>{e.target.connect()});i.on("deviceorientationerror",e=>{alert(`Device orientation error: code ${e.code} message ${e.message}`)});i.init();o.on("gpserror",e=>{alert(`GPS error: ${e.code}`)});o.on("gpsupdate",e=>{if(s){alert(`Got the initial location: longitude ${e.position.coords.longitude}, latitude ${e.position.coords.latitude}`);const d=[{latDis:5e-4,lonDis:0,colour:16711680},{latDis:-5e-4,lonDis:0,colour:16776960},{latDis:0,lonDis:-5e-4,colour:65535},{latDis:0,lonDis:5e-4,colour:65280}],l=new D(10,10,10);for(const a of d){const w=new v(l,new x({color:a.colour}));o.add(w,e.position.coords.longitude+a.lonDis,e.position.coords.latitude+a.latDis)}s=!1}});o.startGps();document.getElementById("setFakeLoc").addEventListener("click",e=>{alert("Using fake input GPS, not real GPS location"),o.stopGps(),o.fakeGps(parseFloat(document.getElementById("fakeLon").value),parseFloat(document.getElementById("fakeLat").value))});t.setAnimationLoop(G);function G(){i?.update(),t.render(r,n)}
-    </script>
+<head>
+  <meta charset="UTF-8" />
+  <title>LoCAR Example — Readable Imports</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-        background: black;
-        font-family: sans-serif;
+  <script type="module">
+    // modulepreload polyfill (same as original)
+    import "https://ar-js-org.github.io/locar.js/assets/modulepreload-polyfill-B5Qt9EMX.js";
+
+    // map minified exports to readable names using `as`
+    import {
+      P as PerspectiveCamera,
+      W as WebGLRenderer,
+      S as Scene,
+      k as GpsEntityManager,
+      b as CameraFeed,
+      V as SensorController,
+      B as BoxGeometry,
+      M as Mesh,
+      a as MeshBasicMaterial,
+    } from "https://ar-js-org.github.io/locar.js/assets/locar.es-8YGvHcXJ.js";
+
+    // ---- Equivalent logic from the original example, using readable names ----
+
+    const camera = new PerspectiveCamera(
+      80,
+      window.innerWidth / window.innerHeight,
+      0.001,
+      1e3
+    );
+
+    const renderer = new WebGLRenderer({ canvas: document.getElementById("glscene") });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene = new Scene();
+    const gpsManager = new GpsEntityManager(scene, camera);
+    const cameraFeed = new CameraFeed({ video: { facingMode: "environment" } }, null);
+
+    cameraFeed.on("webcamstarted", (e) => {
+      scene.background = e.texture;
+    });
+    cameraFeed.on("webcamerror", (e) => {
+      alert(`Webcam error: code ${e.code} message ${e.message}`);
+    });
+
+    window.addEventListener("resize", () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    let firstFix = true;
+    const sensorController = new SensorController(camera);
+
+    sensorController.on("deviceorientationgranted", (e) => {
+      e.target.connect();
+    });
+    sensorController.on("deviceorientationerror", (e) => {
+      alert(`Device orientation error: code ${e.code} message ${e.message}`);
+    });
+    sensorController.init();
+
+    gpsManager.on("gpserror", (e) => {
+      alert(`GPS error: ${e.code}`);
+    });
+
+    gpsManager.on("gpsupdate", (e) => {
+      if (firstFix) {
+        alert(
+          `Got the initial location: longitude ${e.position.coords.longitude}, latitude ${e.position.coords.latitude}`
+        );
+
+        const positions = [
+          { latDis: 5e-4, lonDis: 0, colour: 16711680 },   // red - north
+          { latDis: -5e-4, lonDis: 0, colour: 16776960 },  // yellow - south
+          { latDis: 0, lonDis: -5e-4, colour: 65535 },     // blue - west
+          { latDis: 0, lonDis: 5e-4, colour: 65280 },      // green - east
+        ];
+
+        const boxGeometry = new BoxGeometry(10, 10, 10);
+        for (const p of positions) {
+          const mesh = new Mesh(boxGeometry, new MeshBasicMaterial({ color: p.colour }));
+          gpsManager.add(
+            mesh,
+            e.position.coords.longitude + p.lonDis,
+            e.position.coords.latitude + p.latDis
+          );
+        }
+        firstFix = false;
       }
+    });
 
-      #ui {
-        position: absolute;
-        top: 1rem;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 999;
-      }
+    gpsManager.startGps();
 
-      button {
-        background: rgba(255, 255, 255, 0.9);
-        border: none;
-        padding: 0.6rem 1.2rem;
-        border-radius: 8px;
-        font-size: 1rem;
-        cursor: pointer;
-      }
+    document.getElementById("setFakeLoc").addEventListener("click", () => {
+      alert("Using fake input GPS, not real GPS location");
+      gpsManager.stopGps();
+      gpsManager.fakeGps(
+        parseFloat(document.getElementById("fakeLon").value),
+        parseFloat(document.getElementById("fakeLat").value)
+      );
+    });
 
-      button:hover {
-        background: #ddd;
-      }
-    </style>
-  </head>
+    renderer.setAnimationLoop(renderFrame);
+    function renderFrame() {
+      sensorController?.update();
+      renderer.render(scene, camera);
+    }
+  </script>
 
-  <body onload="init()">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+      font-family: sans-serif;
+    }
 
-    <main>
+    #gpsinput {
+      position: absolute;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      text-align: center;
+    }
 
-<div id="gpsinput">
-<div><input id="fakeLat" placeholder="Fake Lat" /></div>
-<div><input id="fakeLon" placeholder="Fake Lon"/></div>
-<div><button id="setFakeLoc">Set Fake Location!</button></div>
-</div>
+    input {
+      margin: 4px;
+      padding: 0.4rem;
+      width: 150px;
+    }
 
-<canvas id="glscene"></canvas>
+    button {
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
 
-</main>
+    button:hover {
+      background: #ddd;
+    }
 
-  </body>
+    canvas {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div id="gpsinput">
+      <div><input id="fakeLat" placeholder="Fake Lat" /></div>
+      <div><input id="fakeLon" placeholder="Fake Lon" /></div>
+      <div><button id="setFakeLoc">Set Fake Location!</button></div>
+    </div>
+
+    <canvas id="glscene"></canvas>
+  </main>
+</body>
+
 </html>
