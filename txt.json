@@ -1,8 +1,0 @@
-<body>
-    <a-scene embedded arjs>
-        <
-        <a-entity camera></a-entity>
-    </a-scene>
-</body>
-      
-  </body>
