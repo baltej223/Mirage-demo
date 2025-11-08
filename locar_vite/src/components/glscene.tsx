@@ -1,3 +1,4 @@
+// No Body should touch this holy peice of code, on which the rest of the app depends
 import * as THREE from 'three';
 import * as LocAR from 'locar';
 
