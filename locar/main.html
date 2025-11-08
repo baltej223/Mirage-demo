@@ -7,9 +7,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <script type="module" src="./main.js"></script>
+  <script type="module" src="./additional.js"></script>
+  <script type="module" src="./auth.js"></script>
 
   <style>
     body {
+      font-family: arial;
       margin: 0;
       overflow: hidden;
       background: black;
@@ -60,7 +63,17 @@
     </div>
 
     <canvas id="glscene"></canvas>
+
+    <button id="google-sign-in" style="position: absolute; top: 1rem; right: 10em; z-index: 999;">
+      Sign in with Google
+    </button>
+
+    <button id="google-sign-out" style="position: absolute; top: 1rem; right: 0rem; z-index: 999;">
+      Sign out
+    </button>
   </main>
+
+  <script src="./google_auth.js" type="module"></script>
 </body>
 
 </html>
