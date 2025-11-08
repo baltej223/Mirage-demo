@@ -12,6 +12,7 @@ const scene = new THREE.Scene();
 const locar = new LocAR.LocationBased(scene, camera);
 
 window.addEventListener("resize", e => {
+    console.log("resize", e);
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();

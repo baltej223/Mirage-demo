@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import renderer from "./glscene.tsx";
+import renderer from "./glscene";
 
 export default function MainScreen() {
   const containerRef = useRef<HTMLDivElement | null>(null);
