@@ -59,7 +59,7 @@ let firstLocation = true;
 
 
 locar.on("gpsupdate", ev => {
-    if(!firstLocation) return ; 
+    if(firstLocation){
         const boxProps = [{
             latDis: 0.0005,
             lonDis: 0,
@@ -94,6 +94,7 @@ locar.on("gpsupdate", ev => {
         }
         
         firstLocation = false;
+    }
 });
 
 locar.startGps();
