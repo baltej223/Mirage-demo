@@ -2,6 +2,10 @@
 import * as THREE from 'three';
 import * as LocAR from 'locar';
 
+
+import {queryWithinRadius} from "../utils/utils.ts";
+
+
 const camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.001, 1000);
 
 const renderer = new THREE.WebGLRenderer();
@@ -55,7 +59,7 @@ let firstLocation = true;
 
 
 locar.on("gpsupdate", ev => {
-    if(!firstLocation) return ;
+    if(!firstLocation) return ; 
         const boxProps = [{
             latDis: 0.0005,
             lonDis: 0,
