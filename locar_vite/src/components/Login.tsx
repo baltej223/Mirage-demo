@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth  } from "../../firebase.ts"; // adjust the path as needed
 import { useNavigate } from "react-router-dom";
@@ -6,17 +6,18 @@ import { useNavigate } from "react-router-dom";
 const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  let logined : boolean = false;
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError("");
     const provider = new GoogleAuthProvider();
     const navigate = useNavigate();
 
+    logined = false;
     try {
-      const credential: any = await signInWithPopup(auth, provider);
-      console.log("Logged in user:", credential.user);
-      navigate("/");
+      await signInWithPopup(auth, provider);
+      alert("Login successful!");
+      logined = true;
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Google login failed.");
@@ -24,6 +25,13 @@ const Login: React.FC = () => {
       setLoading(false);
     }
   };
+  if(logined) {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+      navigate("/dashboard"); // redirect to /dashboard
+    }, [navigate]);
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">

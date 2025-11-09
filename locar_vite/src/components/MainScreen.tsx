@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
-import renderer from "./glscene";
-import LogoutButton from "./LogoutButton";
+import renderer from "./glscene.ts";
 
 export default function MainScreen() {
+
   // Camera and WebGL renderer setup
   const containerRef = useRef<HTMLDivElement | null>(null);
 
