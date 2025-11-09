@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import renderer from "./glscene";
+import LogoutButton from "./LogoutButton";
 
 export default function MainScreen() {
   // Camera and WebGL renderer setup
@@ -22,6 +23,7 @@ export default function MainScreen() {
 
   return (
     <>
+      <LogoutButton />
       <div id="glscene" ref={containerRef} />
     </>
   );

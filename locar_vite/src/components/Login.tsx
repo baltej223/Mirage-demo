@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth  } from "../../firebase.ts"; // adjust the path as needed
+import { useNavigate } from "react-router-dom";
 
 const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -10,11 +11,12 @@ const Login: React.FC = () => {
     setLoading(true);
     setError("");
     const provider = new GoogleAuthProvider();
+    const navigate = useNavigate();
 
     try {
-      await signInWithPopup(auth, provider);
-      alert("Login successful!");
-      
+      const credential: any = await signInWithPopup(auth, provider);
+      console.log("Logged in user:", credential.user);
+      navigate("/");
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Google login failed.");
