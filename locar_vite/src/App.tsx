@@ -1,6 +1,6 @@
-import './App.css'
-import Login from './components/Login'
-import MainScreen from './components/MainScreen'
+import "./App.css";
+import Login from "./components/Login";
+import MainScreen from "./components/MainScreen";
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -16,7 +16,7 @@ function App() {
           } />
       </Routes>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

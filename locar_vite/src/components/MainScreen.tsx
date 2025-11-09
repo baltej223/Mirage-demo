@@ -10,12 +10,18 @@ export default function MainScreen() {
     const container = containerRef.current;
     if (!container) return;
 
-    if (renderer.domElement && renderer.domElement.parentElement !== container) {
+    if (
+      renderer.domElement &&
+      renderer.domElement.parentElement !== container
+    ) {
       container.appendChild(renderer.domElement);
     }
 
     return () => {
-      if (renderer.domElement && renderer.domElement.parentElement === container) {
+      if (
+        renderer.domElement &&
+        renderer.domElement.parentElement === container
+      ) {
         container.removeChild(renderer.domElement);
       }
     };
