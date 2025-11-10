@@ -7,13 +7,13 @@ const LogoutButton = () => {
 
   const handleLogout = async () => {
     await signOut(auth);
-    navigate("/login"); // redirect to login
+    navigate("/login");
   };
 
   return (
     <button
       onClick={handleLogout}
-      className="fixed top-4 right-4 px-4 py-2 bg-red-500 text-white rounded-lg shadow-lg hover:bg-red-600 active:scale-95 transition"
+      className="fixed top-4 right-4 z-50 px-4 py-2 bg-red-500 text-white rounded-lg shadow-lg hover:bg-red-600 active:scale-95 transition"
     >
       Logout
     </button>

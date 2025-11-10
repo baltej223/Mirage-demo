@@ -5,8 +5,6 @@ import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from './components/ProtectedRoute';
 
 import Login from "./components/Login.tsx";
-import LogoutButton from "./components/LogoutButton.tsx"
-
 
 function App() {
   return (
