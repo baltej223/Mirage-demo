@@ -52,6 +52,14 @@ const MOCK_MIRAGES: (NearbyMirage & { lat: number; lng: number })[] = [
     question: "Who founded the college?",
     color: 0x00ff00,
   },
+  {
+    id: "lol",
+    lat: 30.35374514027677,
+    lng: 76.36862818115806,
+    title: "Shut the fuck up",
+    question: "HAWWWWWWWWW",
+    color: 0x00ffff,
+  }
 ];
 
 // ──────────────────────────────────────────────────────────────
@@ -90,9 +98,9 @@ export async function queryWithinRadius({
         }
       }
 
-      console.log(
-        `Mock API: Found ${matches.length} mirage(s) within ${radiusMeters}m`,
-      );
+      // console.log(
+      //   `Mock API: Found ${matches.length} mirage(s) within ${radiusMeters}m`,
+      // );
       return matches;
     }
 

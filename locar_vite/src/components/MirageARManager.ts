@@ -74,7 +74,7 @@ export class MirageARManager {
 
     // GPS Events
     this.locar.on("gpserror", (error) => {
-      console.error("GPS error:", error);
+      alert("Turn on location services");
     });
     this.locar.on("gpsupdate", (ev) => {
       this.handleGpsUpdate(ev);
@@ -119,7 +119,7 @@ export class MirageARManager {
       this.activeCubes.set(loc.id, mesh);
     }
 
-    console.log(`Loaded ${nearby.length} mirages within ${QUERY_RADIUS}m`);
+    // console.log(`Loaded ${nearby.length} mirages within ${QUERY_RADIUS}m`);
     this.lastQueryTime = now;
   }
 
