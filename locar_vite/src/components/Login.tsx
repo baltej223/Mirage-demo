@@ -8,12 +8,12 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { user } = useAuth();   // ✅ Get auth state
+  const { user } = useAuth(); // ✅ Get auth state
 
   // ✅ If user is already logged in → redirect to dashboard
   useEffect(() => {
     if (user) {
-      navigate("/"); 
+      navigate("/");
     }
   }, [user, navigate]);
 
@@ -25,7 +25,7 @@ const Login: React.FC = () => {
     try {
       const result = await signInWithPopup(auth, provider);
       console.log("Logged in user:", result.user);
-      navigate("/");   // ✅ Redirect here
+      navigate("/"); // ✅ Redirect here
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Google login failed.");

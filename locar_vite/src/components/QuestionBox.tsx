@@ -24,7 +24,6 @@ const QuestionBox = () => {
       {open && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white p-5 rounded-2xl shadow-2xl w-[350px] border border-gray-200">
-
             <h3 className="font-semibold text-lg mb-2 text-center">
               Your Question
             </h3>
@@ -55,7 +54,6 @@ const QuestionBox = () => {
                 Cancel
               </button>
             </div>
-
           </div>
         </div>
       )}

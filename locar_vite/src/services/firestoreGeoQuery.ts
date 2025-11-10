@@ -1,5 +1,5 @@
 // services/mirageApiService.ts
-import { distanceBetween } from 'geofire-common';
+import { distanceBetween } from "geofire-common";
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -16,12 +16,12 @@ export interface MirageFromBackend {
 }
 
 export interface NearbyMirage {
-  id: string;          // we generate a UUID client-side (or use title if unique)
+  id: string; // we generate a UUID client-side (or use title if unique)
   lat: number;
   lng: number;
   title: string;
   question: string;
-  color: number;       // optional – fallback to random
+  color: number; // optional – fallback to random
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -29,27 +29,27 @@ export interface NearbyMirage {
 // ──────────────────────────────────────────────────────────────
 const MOCK_MIRAGES: (NearbyMirage & { lat: number; lng: number })[] = [
   {
-    id: 'mock-1',
+    id: "mock-1",
     lat: 30.353900264615234,
     lng: 76.36834756032006,
-    title: 'North Cube',
-    question: 'What is the name of the main gate?',
+    title: "North Cube",
+    question: "What is the name of the main gate?",
     color: 0xff0000,
   },
   {
-    id: 'mock-2',
+    id: "mock-2",
     lat: 30.353961610020384,
     lng: 76.36880761995873,
-    title: 'South Cube',
-    question: 'How many floors does the library have?',
+    title: "South Cube",
+    question: "How many floors does the library have?",
     color: 0xffff00,
   },
   {
-    id: 'mock-3',
+    id: "mock-3",
     lat: 30.354048629884918,
     lng: 76.36853765450897,
-    title: 'East Cube',
-    question: 'Who founded the college?',
+    title: "East Cube",
+    question: "Who founded the college?",
     color: 0x00ff00,
   },
 ];
@@ -62,8 +62,8 @@ interface MirageQueryOptions {
   radiusMeters: number;
   teamId: string;
   userId: string;
-  endpoint?: string;          // e.g. "https://your-api.com/api/mirages"
-  useMockData?: boolean;      // true → returns MOCK_MIRAGES (offline testing)
+  endpoint?: string; // e.g. "https://your-api.com/api/mirages"
+  useMockData?: boolean; // true → returns MOCK_MIRAGES (offline testing)
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ export async function queryWithinRadius({
   radiusMeters,
   teamId,
   userId,
-  endpoint = '/api/mirages',   // change to your real URL when ready
+  endpoint = "/api/mirages", // change to your real URL when ready
   useMockData = true,
 }: MirageQueryOptions): Promise<NearbyMirage[]> {
   try {
@@ -91,7 +91,7 @@ export async function queryWithinRadius({
       }
 
       console.log(
-        `Mock API: Found ${matches.length} mirage(s) within ${radiusMeters}m`
+        `Mock API: Found ${matches.length} mirage(s) within ${radiusMeters}m`,
       );
       return matches;
     }
@@ -107,9 +107,9 @@ export async function queryWithinRadius({
     };
 
     const response = await fetch(endpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     });
@@ -130,7 +130,8 @@ export async function queryWithinRadius({
     const validated = rawMirages
       .filter(
         (m): m is MirageFromBackend & { lat: number; lng: number } =>
-          typeof (m as any).lat === 'number' && typeof (m as any).lng === 'number'
+          typeof (m as any).lat === "number" &&
+          typeof (m as any).lng === "number",
       )
       .map((m) => ({
         id: `${m.title}-${Date.now()}-${Math.random()}`.slice(0, 20), // fallback ID
@@ -148,10 +149,12 @@ export async function queryWithinRadius({
       return distM <= radiusMeters;
     });
 
-    console.log(`API returned ${finalList.length} mirage(s) within ${radiusMeters}m`);
+    console.log(
+      `API returned ${finalList.length} mirage(s) within ${radiusMeters}m`,
+    );
     return finalList;
   } catch (err) {
-    console.error('Mirage API error:', err);
+    console.error("Mirage API error:", err);
     return [];
   }
 }

@@ -1,2 +1,2 @@
-import { queryWithinRadius } from '../services/firestoreGeoQuery.ts';
+import { queryWithinRadius } from "../services/firestoreGeoQuery.ts";
 export { queryWithinRadius };

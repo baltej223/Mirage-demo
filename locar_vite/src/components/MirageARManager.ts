@@ -1,9 +1,9 @@
 // @ts-ignore
-import * as THREE from 'three';
-import * as LocAR from 'locar'; // Or CDN import as before
-import { queryWithinRadius } from '../services/firestoreGeoQuery';
+import * as THREE from "three";
+import * as LocAR from "locar"; // Or CDN import as before
+import { queryWithinRadius } from "../services/firestoreGeoQuery";
 
-const COLLECTION_NAME = 'mirage-locations';
+const COLLECTION_NAME = "mirage-locations";
 const QUERY_RADIUS = 25; // meters
 const QUERY_THROTTLE_MS = 5000; // Re-query every 5s on GPS updates
 
@@ -26,7 +26,12 @@ export class MirageARManager {
 
   private initAR() {
     // Camera (your code)
-    this.camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.001, 1000);
+    this.camera = new THREE.PerspectiveCamera(
+      80,
+      window.innerWidth / window.innerHeight,
+      0.001,
+      1000,
+    );
 
     // Renderer (mount to container instead of body)
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -38,9 +43,13 @@ export class MirageARManager {
     this.locar = new LocAR.LocationBased(this.scene, this.camera);
 
     // Webcam (no explicit start; events trigger auto-init)
-    this.cam = new LocAR.Webcam({ video: { facingMode: 'environment' } });
-    this.cam.on('webcamstarted', (ev) => { this.scene.background = ev.texture; });
-    this.cam.on('webcamerror', (error) => { console.error('Webcam error:', error); });
+    this.cam = new LocAR.Webcam({ video: { facingMode: "environment" } });
+    this.cam.on("webcamstarted", (ev) => {
+      this.scene.background = ev.texture;
+    });
+    this.cam.on("webcamerror", (error) => {
+      console.error("Webcam error:", error);
+    });
     // Removed this.cam.start(); - auto-handled by LocAR
 
     // Resize
@@ -49,17 +58,27 @@ export class MirageARManager {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
     };
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
     // Device Orientation
-    this.deviceOrientationControls = new LocAR.DeviceOrientationControls(this.camera);
-    this.deviceOrientationControls.on('deviceorientationgranted', (ev) => { ev.target.connect(); });
-    this.deviceOrientationControls.on('deviceorientationerror', (error) => { console.error('Orientation error:', error); });
+    this.deviceOrientationControls = new LocAR.DeviceOrientationControls(
+      this.camera,
+    );
+    this.deviceOrientationControls.on("deviceorientationgranted", (ev) => {
+      ev.target.connect();
+    });
+    this.deviceOrientationControls.on("deviceorientationerror", (error) => {
+      console.error("Orientation error:", error);
+    });
     this.deviceOrientationControls.init();
 
     // GPS Events
-    this.locar.on('gpserror', (error) => { console.error('GPS error:', error); });
-    this.locar.on('gpsupdate', (ev) => { this.handleGpsUpdate(ev); });
+    this.locar.on("gpserror", (error) => {
+      console.error("GPS error:", error);
+    });
+    this.locar.on("gpsupdate", (ev) => {
+      this.handleGpsUpdate(ev);
+    });
     this.locar.startGps();
 
     // Animation Loop
@@ -105,11 +124,12 @@ export class MirageARManager {
   }
 
   private clearCubes() {
-    this.activeCubes.forEach((mesh) => {  // Fixed: forEach avoids iteration TS error
-      this.scene.remove(mesh);  // Fixed: Manual scene remove (no locar.remove)
+    this.activeCubes.forEach((mesh) => {
+      // Fixed: forEach avoids iteration TS error
+      this.scene.remove(mesh); // Fixed: Manual scene remove (no locar.remove)
       mesh.geometry.dispose();
       if (Array.isArray(mesh.material)) {
-        mesh.material.forEach(mat => mat.dispose());
+        mesh.material.forEach((mat) => mat.dispose());
       } else {
         mesh.material.dispose();
       }
@@ -121,7 +141,7 @@ export class MirageARManager {
   destroy() {
     this.clearCubes();
     // Removed window.removeEventListener - anonymous func; re-add named if needed
-    this.locar.stopGps?.();  // Optional chaining for safety
+    this.locar.stopGps?.(); // Optional chaining for safety
     // Removed this.cam.stop?.(); - no method
     this.deviceOrientationControls.disconnect?.();
     this.renderer.dispose();

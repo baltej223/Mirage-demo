@@ -1,7 +1,7 @@
 let openModalExternal: ((question: string) => Promise<string>) | null = null;
 
 export function registerQuestionOpener(
-  fn: (question: string) => Promise<string>
+  fn: (question: string) => Promise<string>,
 ) {
   openModalExternal = fn;
 }

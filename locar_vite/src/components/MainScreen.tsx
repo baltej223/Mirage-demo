@@ -5,7 +5,6 @@ import { useAuth } from "../context/AuthContext";
 import QuestionBox from "./QuestionBox";
 
 export default function MainScreen() {
-
   // Camera and WebGL renderer setup
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { user } = useAuth();
