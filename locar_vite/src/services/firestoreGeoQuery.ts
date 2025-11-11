@@ -58,7 +58,7 @@ const MOCK_MIRAGES: (NearbyMirage & { lat: number; lng: number })[] = [
     id:"chaddi",
     lat:30.351200057235996,
     lng: 76.36030659588195, 
-    question:"This is a random random question", 
+    question:"I NEED TO SLEEP, YET I AM TESTING THIS AT 3:AM, WHY?", 
     color:0x00ffff
     
   }
