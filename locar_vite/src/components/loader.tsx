@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 const Loader: React.FC = () => {
   return (
-    <div className="flex w-full h-screen items-center justify-center min-h-screen bg-black">
+    <div className="flex flex-col w-full h-screen items-center justify-center bg-black">
       <div className="relative w-24 h-24">
         {/* Outer rotating ring */}
         <motion.div
@@ -29,6 +29,16 @@ const Loader: React.FC = () => {
           transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
+
+      {/* Society Label */}
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center text-center"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      >
+        <div className="text-lg text-cyan-400/80 font-medium">CCS</div>
+      </motion.div>
     </div>
   );
 };
