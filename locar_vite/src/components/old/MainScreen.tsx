@@ -1,42 +1,26 @@
 import { useEffect, useRef } from "react";
-import renderer from "./glscene";
-import LogoutButton from "./LogoutButton";
-import { useAuth } from "../context/AuthContext";
-import QuestionBox from "./QuestionBox";
+import { MirageARManager } from "../MirageARManager.ts" // Adjust path as needed based on project structure
 
 export default function MainScreen() {
-  // Camera and WebGL renderer setup
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const { user } = useAuth();
+  const arManagerRef = useRef<MirageARManager | null>(null);
 
   useEffect(() => {
-    console.log(user); // ✅ log user in console
-
     const container = containerRef.current;
     if (!container) return;
 
-    if (
-      renderer.domElement &&
-      renderer.domElement.parentElement !== container
-    ) {
-      container.appendChild(renderer.domElement);
-    }
+    // Initialize AR manager
+    arManagerRef.current = new MirageARManager(container);
 
     return () => {
-      if (
-        renderer.domElement &&
-        renderer.domElement.parentElement === container
-      ) {
-        container.removeChild(renderer.domElement);
+      // Cleanup on unmount
+      if (arManagerRef.current) {
+        arManagerRef.current.destroy();
       }
     };
   }, []);
 
   return (
-    <>
-      <QuestionBox />
-      <LogoutButton />
-      <div id="glscene" ref={containerRef} />
-    </>
+    <div ref={containerRef} style={{ width: "100%", height: "100vh" }} />
   );
 }
