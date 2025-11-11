@@ -148,7 +148,7 @@ insteaderface MirageQueryOptions {
           const model = gltf.scene;
 
           // Optional: scale & rotate
-          model.scale.set(25, 25, 25);
+          model.scale.set(100, 100, 100);
           model.rotation.y = Math.PI; // face user if needed
 
           this.locar.add(model, loc.lng, loc.lat);
