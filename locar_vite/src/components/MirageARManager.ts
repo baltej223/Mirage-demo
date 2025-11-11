@@ -1,4 +1,3 @@
-// @ts-ignore
 import * as THREE from "three";
 import * as LocAR from "locar"; // Or CDN import as before
 import { queryWithinRadius } from "../services/firestoreGeoQuery";
@@ -209,3 +208,5 @@ insteaderface MirageQueryOptions {
     return this.renderer;
   }
 }
+
+// @ts-ignore
