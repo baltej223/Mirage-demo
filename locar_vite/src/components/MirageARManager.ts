@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import * as LocAR from "locar"; // Or CDN import as before
 import { queryWithinRadius } from "../services/firestoreGeoQuery";
-import { askQuestion } from "../utils/questionModel";
+import type { NearbyMirage } from "../services/firestoreGeoQuery";
 
 //const COLLECTION_NAME = "mirage-locations";
 const QUERY_RADIUS = 25; // meters
@@ -20,9 +20,11 @@ export class MirageARManager {
   private container: HTMLElement;
   private raycaster = new THREE.Raycaster();
   private clickVector = new THREE.Vector2();
+  private onCubeClick?: (cubeData: NearbyMirage) => void;
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, onCubeClick?: (cubeData: NearbyMirage) => void) {
     this.container = container;
+    this.onCubeClick = onCubeClick;
     this.initAR();
   }
 
@@ -135,7 +137,7 @@ insteaderface MirageQueryOptions {
     for (const loc of nearby) {
       const material = new THREE.MeshBasicMaterial({ color: loc.color });
       const mesh = new THREE.Mesh(geom, material);
-      mesh.userData.question = loc.question; // Store the question in the mesh
+      mesh.userData = loc; // Store full cube data
       this.locar.add(mesh, loc.lng, loc.lat); // Absolute coords
       this.activeCubes.set(loc.id, mesh);
     }
@@ -168,20 +170,13 @@ insteaderface MirageQueryOptions {
 
   private onCubeClicked(id: string, mesh: THREE.Mesh) {
     console.log("Cube clicked:", id);
-
-    console.log(mesh.userData.question);
-
-    askQuestion("What is your answer to object " + id + "?")
-      .then((result) => {
-        console.log("User answered:", result);
-      });
+    const cubeData = mesh.userData as NearbyMirage;
+    this.onCubeClick?.(cubeData);
   }
-
 
   private clearCubes() {
     this.activeCubes.forEach((mesh) => {
-      // Fixed: forEach avoids iteration TS error
-      this.scene.remove(mesh); // Fixed: Manual scene remove (no locar.remove)
+      this.scene.remove(mesh);
       mesh.geometry.dispose();
       if (Array.isArray(mesh.material)) {
         mesh.material.forEach((mat) => mat.dispose());
