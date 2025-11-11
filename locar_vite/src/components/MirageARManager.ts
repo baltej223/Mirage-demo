@@ -52,6 +52,13 @@ export class MirageARManager {
     this.scene = new THREE.Scene();
     this.locar = new LocAR.LocationBased(this.scene, this.camera);
 
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+    this.scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    directionalLight.position.set(0, 10, 10);
+    this.scene.add(directionalLight);
+
     // Webcam (no explicit start; events trigger auto-init)
     this.cam = new LocAR.Webcam({ video: { facingMode: "environment" } });
     this.cam.on("webcamstarted", (ev) => {
@@ -141,7 +148,7 @@ insteaderface MirageQueryOptions {
           const model = gltf.scene;
 
           // Optional: scale & rotate
-          model.scale.set(3, 3, 3);
+          model.scale.set(25, 25, 25);
           model.rotation.y = Math.PI; // face user if needed
 
           this.locar.add(model, loc.lng, loc.lat);
