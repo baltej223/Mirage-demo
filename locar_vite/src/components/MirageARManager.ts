@@ -200,17 +200,17 @@ insteaderface MirageQueryOptions {
       );
 
       if (clicked) {
-        const [id, rootObj] = clicked;
-        this.onCubeClicked(id, rootObj);
+        const [id] = clicked;
+        this.onCubeClicked(id);
       }
     }
   }
 
-  private onCubeClicked(id: string, object: THREE.Object3D) {
+  private onCubeClicked(id: string) {
     console.log("Cube clicked:", id);
 
-    object.scale.set(120, 120, 120);
-    setTimeout(() => object.scale.set(100, 100, 100), 200);
+    // mesh.scale.set(6, 6, 6);
+    // setTimeout(() => mesh.scale.set(5, 5, 5), 200);
 
     askQuestion("What is your answer to object " + id + "?").then((result) => {
       console.log("User answered:", result);
