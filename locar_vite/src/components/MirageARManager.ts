@@ -3,6 +3,9 @@ import * as LocAR from "locar"; // Or CDN import as before
 import { queryWithinRadius } from "../services/firestoreGeoQuery";
 import { askQuestion } from "../utils/questionModel";
 
+// @ts-ignore
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+
 //const COLLECTION_NAME = "mirage-locations";
 const QUERY_RADIUS = 25; // meters
 const QUERY_THROTTLE_MS = 5000; // Re-query every 5s on GPS updates
@@ -20,6 +23,7 @@ export class MirageARManager {
   private container: HTMLElement;
   private raycaster = new THREE.Raycaster();
   private clickVector = new THREE.Vector2();
+  private gltfLoader = new GLTFLoader();
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -43,7 +47,6 @@ export class MirageARManager {
     this.renderer.domElement.addEventListener("touchstart", (event) => {
       this.handleClick(event.touches[0]);
     });
-    
 
     // Scene & LocAR
     this.scene = new THREE.Scene();
@@ -130,13 +133,30 @@ insteaderface MirageQueryOptions {
       endpoint: "/api/arugh",
     });
 
-    // Add cubes for each
-    const geom = new THREE.BoxGeometry(5, 5, 5); // Shared for perf
+    const geom = new THREE.BoxGeometry(5, 5, 5);
     for (const loc of nearby) {
-      const material = new THREE.MeshBasicMaterial({ color: loc.color });
-      const mesh = new THREE.Mesh(geom, material);
-      this.locar.add(mesh, loc.lng, loc.lat); // Absolute coords
-      this.activeCubes.set(loc.id, mesh);
+      this.gltfLoader.load(
+        "../models/ancient_coin_of_the_bevel.glb",
+        (gltf) => {
+          const model = gltf.scene;
+
+          // Optional: scale & rotate
+          model.scale.set(3, 3, 3);
+          model.rotation.y = Math.PI; // face user if needed
+
+          this.locar.add(model, loc.lng, loc.lat);
+          this.activeCubes.set(loc.id, model as unknown as THREE.Mesh);
+        },
+        (progress) => console.log(progress.loaded / progress.total),
+        (err) => {
+          console.log("GLB failed, using cube instead", err);
+          const mesh = new THREE.Mesh(
+            geom,
+            new THREE.MeshBasicMaterial({ color: loc.color })
+          );
+          this.locar.add(mesh, loc.lng, loc.lat);
+        }
+      );
     }
 
     // console.log(`Loaded ${nearby.length} mirages within ${QUERY_RADIUS}m`);
@@ -152,12 +172,14 @@ insteaderface MirageQueryOptions {
     this.raycaster.setFromCamera(this.clickVector, this.camera);
 
     const meshes = Array.from(this.activeCubes.values());
-    const intersects = this.raycaster.intersectObjects(meshes, false);
+    const intersects = this.raycaster.intersectObjects(meshes, true);
 
     if (intersects.length > 0) {
       const mesh = intersects[0].object as THREE.Mesh;
 
-      const clicked = [...this.activeCubes.entries()].find(([_, m]) => m === mesh);
+      const clicked = [...this.activeCubes.entries()].find(
+        ([_, m]) => m === mesh
+      );
       if (clicked) {
         const [id] = clicked;
         this.onCubeClicked(id, mesh);
@@ -171,8 +193,7 @@ insteaderface MirageQueryOptions {
     mesh.scale.set(6, 6, 6);
     setTimeout(() => mesh.scale.set(5, 5, 5), 200);
 
-    askQuestion("What is your answer to object " + id + "?")
-    .then((result) => {
+    askQuestion("What is your answer to object " + id + "?").then((result) => {
       console.log("User answered:", result);
     });
   }
