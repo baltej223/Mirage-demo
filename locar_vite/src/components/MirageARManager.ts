@@ -127,14 +127,15 @@ insteaderface MirageQueryOptions {
       radiusMeters: QUERY_RADIUS,
       teamId: "somerandomOne",
       userId: "SomesomerandomOneone",
-      endpoint: "/api/arugh",
+      endpoint: "/api/arugh", 
     });
 
     // Add cubes for each
-    const geom = new THREE.BoxGeometry(5, 5, 5); // Shared for perf
+    const geom = new THREE.BoxGeometry(3, 3, 3); // Shared for perf
     for (const loc of nearby) {
       const material = new THREE.MeshBasicMaterial({ color: loc.color });
       const mesh = new THREE.Mesh(geom, material);
+      mesh.userData.question = loc.question; // Store the question in the mesh
       this.locar.add(mesh, loc.lng, loc.lat); // Absolute coords
       this.activeCubes.set(loc.id, mesh);
     }
@@ -171,11 +172,14 @@ insteaderface MirageQueryOptions {
     mesh.scale.set(6, 6, 6);
     setTimeout(() => mesh.scale.set(5, 5, 5), 200);
 
+    console.log(mesh.userData.question);
+
     askQuestion("What is your answer to object " + id + "?")
-    .then((result) => {
-      console.log("User answered:", result);
-    });
+      .then((result) => {
+        console.log("User answered:", result);
+      });
   }
+
 
   private clearCubes() {
     this.activeCubes.forEach((mesh) => {

@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { MirageARManager } from './MirageARManager.ts';
 import LogoutButton from './LogoutButton.tsx';
+import QuestionBox from "./QuestionBox.tsx";
 
 const MirageARView: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -17,8 +18,14 @@ const MirageARView: React.FC = () => {
     };
   }, []);
 
+  let [open, setOpen] = React.useState(true);
+  let [question, setQuestion] = React.useState("Is this a sample question?");
+
   return (
     <>
+    <QuestionBox open={open} setopen={setOpen} question={question} onClose={(answer)=>{
+      console.log("Here I printed some data");
+    }}/>
     <LogoutButton/>
     <div
       ref={containerRef}
@@ -29,3 +36,4 @@ const MirageARView: React.FC = () => {
 };
 
 export default MirageARView;
+

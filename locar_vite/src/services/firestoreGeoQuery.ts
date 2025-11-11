@@ -10,9 +10,7 @@ interface GeoPoint {
 }
 
 export interface MirageFromBackend {
-  title: string;
   question: string;
-  // You can add id, color, etc. later if the backend sends them
 }
 
 export interface NearbyMirage {
@@ -145,7 +143,6 @@ export async function queryWithinRadius({
         id: `${m.title}-${Date.now()}-${Math.random()}`.slice(0, 20), // fallback ID
         lat: m.lat,
         lng: m.lng,
-        title: m.title,
         question: m.question,
         color: Math.random() * 0xffffff,
       }));
