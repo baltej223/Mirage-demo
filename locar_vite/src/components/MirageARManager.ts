@@ -169,9 +169,6 @@ insteaderface MirageQueryOptions {
   private onCubeClicked(id: string, mesh: THREE.Mesh) {
     console.log("Cube clicked:", id);
 
-    mesh.scale.set(6, 6, 6);
-    setTimeout(() => mesh.scale.set(5, 5, 5), 200);
-
     console.log(mesh.userData.question);
 
     askQuestion("What is your answer to object " + id + "?")
