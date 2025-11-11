@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 type QuestionBoxProps = {
   open: boolean;
@@ -16,11 +16,7 @@ const QuestionBox: React.FC<QuestionBoxProps> = ({
   question=""
 
 }) => {
-  const [answer, setAnswer] = useState(initialAnswer);
-
-  useEffect(() => {
-    setAnswer(initialAnswer);
-  }, [initialAnswer, open]);
+  const [answer, setAnswer] = useState<string>(initialAnswer || "");
 
   const handleSubmit = () => {
     onClose(answer);
@@ -29,7 +25,7 @@ const QuestionBox: React.FC<QuestionBoxProps> = ({
   };
 
   const handleCancel = () => {
-    onClose(undefined);
+    onClose(answer);
     setopen(false);
     setAnswer("");
   };
