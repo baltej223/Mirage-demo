@@ -17,7 +17,7 @@ export class MirageARManager {
   private locar!: LocAR.LocationBased;
   private cam!: LocAR.Webcam;
   private deviceOrientationControls!: LocAR.DeviceOrientationControls;
-  private activeCubes: Map<string, THREE.Mesh> = new Map(); // Track by doc ID
+  private activeCubes: Map<string, THREE.Object3D> = new Map();
   private lastQueryTime = 0;
   private currentUserPos: { lat: number; lng: number } | null = null;
   private container: HTMLElement;
@@ -152,7 +152,7 @@ insteaderface MirageQueryOptions {
           model.rotation.y = Math.PI; // face user if needed
 
           this.locar.add(model, loc.lng, loc.lat);
-          this.activeCubes.set(loc.id, model as unknown as THREE.Mesh);
+          this.activeCubes.set(loc.id, model);
         },
         (progress) => console.log(progress.loaded / progress.total),
         (err) => {
@@ -170,6 +170,17 @@ insteaderface MirageQueryOptions {
     this.lastQueryTime = now;
   }
 
+  private objectContains(
+    root: THREE.Object3D,
+    target: THREE.Object3D
+  ): boolean {
+    if (root === target) return true;
+    for (const child of root.children) {
+      if (this.objectContains(child, target)) return true;
+    }
+    return false;
+  }
+
   private handleClick(event: MouseEvent | Touch) {
     const rect = this.renderer.domElement.getBoundingClientRect();
 
@@ -178,27 +189,28 @@ insteaderface MirageQueryOptions {
 
     this.raycaster.setFromCamera(this.clickVector, this.camera);
 
-    const meshes = Array.from(this.activeCubes.values());
-    const intersects = this.raycaster.intersectObjects(meshes, true);
+    const roots = Array.from(this.activeCubes.values());
+    const intersects = this.raycaster.intersectObjects(roots, true);
 
     if (intersects.length > 0) {
-      const mesh = intersects[0].object as THREE.Mesh;
+      const mesh = intersects[0].object;
 
-      const clicked = [...this.activeCubes.entries()].find(
-        ([_, m]) => m === mesh
+      const clicked = [...this.activeCubes.entries()].find(([id, root]) =>
+        this.objectContains(root, mesh)
       );
+
       if (clicked) {
-        const [id] = clicked;
-        this.onCubeClicked(id, mesh);
+        const [id, rootObj] = clicked;
+        this.onCubeClicked(id, rootObj);
       }
     }
   }
 
-  private onCubeClicked(id: string, mesh: THREE.Mesh) {
+  private onCubeClicked(id: string, object: THREE.Object3D) {
     console.log("Cube clicked:", id);
 
-    mesh.scale.set(6, 6, 6);
-    setTimeout(() => mesh.scale.set(5, 5, 5), 200);
+    object.scale.set(120, 120, 120);
+    setTimeout(() => object.scale.set(100, 100, 100), 200);
 
     askQuestion("What is your answer to object " + id + "?").then((result) => {
       console.log("User answered:", result);
@@ -206,15 +218,22 @@ insteaderface MirageQueryOptions {
   }
 
   private clearCubes() {
-    this.activeCubes.forEach((mesh) => {
-      // Fixed: forEach avoids iteration TS error
-      this.scene.remove(mesh); // Fixed: Manual scene remove (no locar.remove)
-      mesh.geometry.dispose();
-      if (Array.isArray(mesh.material)) {
-        mesh.material.forEach((mat) => mat.dispose());
-      } else {
-        mesh.material.dispose();
-      }
+    this.activeCubes.forEach((root) => {
+      this.scene.remove(root);
+
+      root.traverse((child) => {
+        if ((child as THREE.Mesh).geometry) {
+          (child as THREE.Mesh).geometry.dispose();
+        }
+        if ((child as THREE.Mesh).material) {
+          const material = (child as THREE.Mesh).material;
+          if (Array.isArray(material)) {
+            material.forEach((m) => m.dispose());
+          } else {
+            material.dispose();
+          }
+        }
+      });
     });
     this.activeCubes.clear();
   }
