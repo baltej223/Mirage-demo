@@ -18,7 +18,6 @@ export interface NearbyMirage {
   id: string; // we generate a UUID client-side (or use title if unique)
   lat: number;
   lng: number;
-  title: string;
   question: string;
   color: number; // optional – fallback to random
 }
@@ -31,7 +30,6 @@ const MOCK_MIRAGES: (NearbyMirage & { lat: number; lng: number })[] = [
     id: "mock-1",
     lat: 30.353900264615234,
     lng: 76.36834756032006,
-    title: "North Cube",
     question: "What is the name of the main gate?",
     color: 0xff0000,
   },
@@ -39,7 +37,6 @@ const MOCK_MIRAGES: (NearbyMirage & { lat: number; lng: number })[] = [
     id: "mock-2",
     lat: 30.353961610020384,
     lng: 76.36880761995873,
-    title: "South Cube",
     question: "How many floors does the library have?",
     color: 0xffff00,
   },
@@ -47,7 +44,6 @@ const MOCK_MIRAGES: (NearbyMirage & { lat: number; lng: number })[] = [
     id: "mock-3",
     lat: 30.354048629884918,
     lng: 76.36853765450897,
-    title: "East Cube",
     question: "Who founded the college?",
     color: 0x00ff00,
   },
@@ -55,9 +51,16 @@ const MOCK_MIRAGES: (NearbyMirage & { lat: number; lng: number })[] = [
     id: "lol",
     lat: 30.35374514027677,
     lng: 76.36862818115806,
-    title: "Shut the fuck up",
     question: "HAWWWWWWWWW",
     color: 0x00ffff,
+  },
+  {
+    id:"chaddi",
+    lat:30.351200057235996,
+    lng: 76.36030659588195, 
+    question:"This is a random random question", 
+    color:0x00ffff
+    
   }
 ];
 
@@ -141,10 +144,9 @@ export async function queryWithinRadius({
           typeof (m as any).lng === "number",
       )
       .map((m) => ({
-        id: `${m.title}-${Date.now()}-${Math.random()}`.slice(0, 20), // fallback ID
+        id: `${Date.now()}-${Math.random()}`.slice(0, 20), // fallback ID
         lat: m.lat,
         lng: m.lng,
-        title: m.title,
         question: m.question,
         color: Math.random() * 0xffffff,
       }));
