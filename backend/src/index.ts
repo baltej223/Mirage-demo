@@ -2,7 +2,7 @@ import express, { NextFunction } from "express";
 import { z } from "zod";
 import { validatePOSTBody } from "./middlewares/validate";
 import User from './user'
-import { db } from './firebase'
+import db from './firebase'
 import { firestore } from "firebase-admin";
 import * as geo from 'geofire-common'
 
