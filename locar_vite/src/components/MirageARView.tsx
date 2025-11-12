@@ -5,12 +5,15 @@ import LogoutButton from './LogoutButton.tsx';
 import QuestionBox from "./QuestionBox.tsx";
 import { checkAnswer } from '../services/firestoreGeoQuery';
 import type { NearbyMirage } from '../services/firestoreGeoQuery';
+import { useAuth } from '../context/AuthContext';
+import type { User } from "firebase/auth";
 
 const MirageARView: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const managerRef = useRef<MirageARManager | null>(null);
   const [selectedCube, setSelectedCube] = useState<NearbyMirage | null>(null);
   const [isQuestionBoxOpen, setIsQuestionBoxOpen] = useState(false);
+  const { user } = useAuth();
 
   const handleCubeClick = (cubeData: NearbyMirage) => {
     setSelectedCube(cubeData);
@@ -19,21 +22,22 @@ const MirageARView: React.FC = () => {
 
   useEffect(() => {
     if (containerRef.current) {
-      managerRef.current = new MirageARManager(containerRef.current, handleCubeClick);
+      managerRef.current = new MirageARManager(containerRef.current, handleCubeClick, user);
     }
 
     return () => {
       managerRef.current?.destroy();
     };
-  }, []);
+  }, [user]);
 
-  const handleQuestionBoxClose = async (answer: string | undefined) => {
+  const handleQuestionBoxClose = async (questionId: string, answer?: string) => {
     if (answer == undefined) return;
-    console.log('Answer:', answer);
+    console.log('Answer:'+ answer + " " + user);
+    console.log('Question ID:'+ questionId);
     await checkAnswer({
-      questionId: "baltej_idhar_question_id_dal",
+      questionId,
       answer,
-      teamId: "baltej_idhar_team_id_dal",
+      userId: user?.uid ?? "user-mar-gya",
       lat: 0,//"baltej_idhar_lat_dal",
       lng: 0,//"baltej_idhar_lng_dal",
     })
@@ -49,6 +53,7 @@ const MirageARView: React.FC = () => {
           setopen={setIsQuestionBoxOpen}
           question={selectedCube.question}
           onClose={handleQuestionBoxClose}
+          id={selectedCube.id}
         />
       )}
       <LogoutButton />

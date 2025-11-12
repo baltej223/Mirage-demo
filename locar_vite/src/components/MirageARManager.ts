@@ -2,6 +2,7 @@ import * as THREE from "three";
 import * as LocAR from "locar";
 import { queryWithinRadius } from "../services/firestoreGeoQuery";
 import type { NearbyMirage } from "../services/firestoreGeoQuery";
+import type { User } from "firebase/auth";
 
 const QUERY_THROTTLE_MS = 5000;
 
@@ -19,14 +20,18 @@ export class MirageARManager {
   private raycaster = new THREE.Raycaster();
   private clickVector = new THREE.Vector2();
   private onCubeClick?: (cubeData: NearbyMirage) => void;
+  private user: User | null;
 
-  constructor(container: HTMLElement, onCubeClick?: (cubeData: NearbyMirage) => void) {
+  constructor(container: HTMLElement, onCubeClick?: (cubeData: NearbyMirage) => void, user: User | null = null) {
     this.container = container;
     this.onCubeClick = onCubeClick;
+    this.user = user;
+    console.log((this.user?.uid));
     this.initAR();
   }
 
   private initAR() {
+
     // Camera (your code)
     this.camera = new THREE.PerspectiveCamera(
       80,
@@ -94,6 +99,7 @@ export class MirageARManager {
       this.renderer.render(this.scene, this.camera);
     };
     this.renderer.setAnimationLoop(animate);
+
   }
 
   private async handleGpsUpdate(ev: any) {
@@ -108,10 +114,12 @@ export class MirageARManager {
     this.clearCubes();
 
     if (!this.currentUserPos) return;
+    console.log(this.user?.uid);
     const nearby = await queryWithinRadius({
       center: this.currentUserPos,
-      teamId: "baltej_idhar_teamId_dal",
-      userId: "baltej_dihar_userId_dal",
+      // teamId: "baltej_idhar_teamId_dal",
+      userId: this.user?.uid || "user-is-useless",
+      useMockData: false
     });
 
     const geom = new THREE.BoxGeometry(3, 3, 3); 

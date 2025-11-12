@@ -5,6 +5,7 @@ import User from './user'
 import db from './firebase'
 import { firestore } from "firebase-admin";
 import * as geo from 'geofire-common'
+import cors from "cors";
 
 class PerfMonitor {
   data: {[key: string]: { avg: number; count: number; } }
@@ -33,6 +34,13 @@ class PerfMonitor {
 }
 
 const app = express();
+
+app.use(cors({
+  origin: "*", // or "*" for all
+  credentials: true
+}));
+
+
 app.use(express.json());
 const PORT = 3000;
 const perf = new PerfMonitor();
@@ -64,8 +72,16 @@ app.post("/api/checkAnswer", validatePOSTBody(checkAnswerRequestSchema), perf.mi
     return res.json({ "error" : "Not found" });
   }
 
-  const team = db.collection('mirage-teams').doc(user.teamId);
-  const teamData = (await team.get()).data();
+  // AARGH CHECK IF IT IS CORRECT
+  const teamQuery = await db.collection('mirage-teams').where('members', 'array-contains', user.userId).get();
+  if (teamQuery.empty) {
+    res.status(404);
+    return res.json({ "error": "Team not found" });
+  }
+  const team = teamQuery?.docs[0]?.ref;
+  // ----- Fetching user's team Fisnished -----
+  const teamData = (await team?.get())?.data();
+
   if (!teamData) {
     res.status(404);
     return res.json({ "error" : "Not found" });
@@ -91,7 +107,7 @@ app.post("/api/checkAnswer", validatePOSTBody(checkAnswerRequestSchema), perf.mi
     }
   }
 
-  team.update({
+  team?.update({
     points: firestore.FieldValue.increment(100),
     answered_questions: firestore.FieldValue.arrayUnion(questionId)
   })
@@ -110,6 +126,7 @@ const getTargetRequestSchema = z.object({
 });
 app.post("/api/getTarget", validatePOSTBody(getTargetRequestSchema), perf.middleware('getTarget'), async (req, res) => {
   const { lat, lng, user } = req.body;
+  console.log(user.userId);
   const center = [lat, lng];
   const radiusInM = VALID_DISTANCE_FOR_ANSWERING_IN_KM * 1000;
 

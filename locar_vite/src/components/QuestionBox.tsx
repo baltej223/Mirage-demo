@@ -1,11 +1,13 @@
 import React, { useState } from "react";
+import type { User } from "firebase/auth";
 
 type QuestionBoxProps = {
   open: boolean;
   setopen: (open: boolean) => void;
-  onClose: (answer?: string) => void;
+  onClose: (answer?: string, id?: string) => void;
   initialAnswer?: string;
   question:string;
+  id:string
 };
 
 const QuestionBox: React.FC<QuestionBoxProps> = ({
@@ -13,14 +15,15 @@ const QuestionBox: React.FC<QuestionBoxProps> = ({
   onClose,
   setopen,
   initialAnswer = "",
-  question=""
+  question="",
+  id
 
 }) => {
   const [answer, setAnswer] = useState<string>(initialAnswer || "");
 
   const handleSubmit = () => {
     console.log("Before Handling the answer to onClose: "+ answer);
-    onClose(answer);
+    onClose(answer, id);
     setopen(false);
     setAnswer("");
   };

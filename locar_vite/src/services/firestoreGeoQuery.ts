@@ -41,20 +41,20 @@ const MOCK_MIRAGES: (NearbyMirage)[] = [
 
 interface MirageQueryOptions {
   center: GeoPoint;
-  teamId: string;
   userId: string;
-  endpoint?: string;
   useMockData?: boolean;
 }
 
-const BACKEND_DOMAIN = "http://localhost:3000"
+const BACKEND_DOMAIN = "http://localhost:3000";
+
+
 export async function queryWithinRadius({
   center,
-  teamId,
+  // teamId,
   userId,
-  endpoint = "/api/getTarget",
   useMockData = true,
 }: MirageQueryOptions): Promise<NearbyMirage[]> {
+  const endpoint = "/api/getTarget";
   try {
     if (useMockData) {
       const centerPoint: [number, number] = [center.lat, center.lng];
@@ -71,11 +71,11 @@ export async function queryWithinRadius({
 
     const payload = {
       user: {
-        teamId,
         userId
       },
       ...center,
     };
+    console.log(BACKEND_DOMAIN + endpoint, 'and payload:', payload.user.userId);
 
     const response = await fetch(BACKEND_DOMAIN + endpoint, {
       method: "POST",
@@ -102,10 +102,10 @@ export async function queryWithinRadius({
   }
 }
 
-export async function checkAnswer({ questionId, answer, teamId, lat, lng }: {
+export async function checkAnswer({ questionId, answer, userId, lat, lng }: {
   questionId: string;
   answer: string;
-  teamId: string;
+  userId: string;
   lat: number;
   lng: number
 }): Promise<{
@@ -121,7 +121,7 @@ export async function checkAnswer({ questionId, answer, teamId, lat, lng }: {
         questionId,
         answer,
         user: {
-          teamId
+          userId
         },
         lat,
         lng,
