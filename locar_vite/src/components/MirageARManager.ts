@@ -53,7 +53,7 @@ export class MirageARManager {
 
     // Scene & LocAR
     this.scene = new THREE.Scene();
-    this.locar = new LocAR.LocationBased(this.scene, this.camera);
+    this.locar = new LocAR.LocationBased(this.scene, this.camera)
 
     // Webcam (no explicit start; events trigger auto-init)
     this.cam = new LocAR.Webcam({ video: { facingMode: "environment" } });
