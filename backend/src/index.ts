@@ -9,9 +9,16 @@ import pino from "pino-http";
 import logger, { getLogs } from "./logger";
 import cors from "cors";
 import { FieldPath } from "firebase-admin/firestore";
-import questions from "./questions";
-import fs from 'fs';
-import path from "path";
+
+const questions: Record<
+  string,
+  {
+    lat: number;
+    lng: number;
+    question: string;
+    answer: string;
+  }
+  > = {};
 
 const truncateDecimals = (number: number, decimals: number) => 
   Math.trunc(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
@@ -68,22 +75,6 @@ app.get("/", (req, res) => {
     ...perf.data,
   });
 });
-
-app.get('/wdakjfchaefvhskejhjkh', async (_, res) => {
-  const questions = ((await db.collection('mirage-locations').get()).docs);
-  const map: Record<string, { lat: number; lng: number; question: string; answer: string }> = {};
-  questions.forEach(x => {
-    map[x.id] = {
-      lat: x.data().location.latitude,
-      lng: x.data().location.longitude,
-      question: x.data().question,
-      answer: x.data().answer
-    }
-  });
-  fs.writeFile(path.join(__dirname, 'questions.ts'), "export default " + JSON.stringify(map, null, 2), () => {
-    res.json({ status: 'done' });
-  });
-})
 
 /**
  * @route GET /logs
@@ -198,9 +189,9 @@ app.post(
       answered_questions: firestore.FieldValue.arrayUnion(questionId),
     });
     if (data.points > 10) {
-      questionRef.update({
-        points: firestore.FieldValue.increment(-10),
-      });
+      // questionRef.update({
+      //   points: firestore.FieldValue.increment(-10),
+      // });
     }
 
     const nextQuestion = await db.collection("mirage-locations")
@@ -262,6 +253,16 @@ app.post(
   },
 );
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   logger.info(`${PORT} is now in use`);
+
+  const rawquestions = ((await db.collection('mirage-locations').get()).docs);
+  rawquestions.forEach(x => {
+    questions[x.id] = {
+      lat: x.data().location.latitude,
+      lng: x.data().location.longitude,
+      question: x.data().question,
+      answer: x.data().answer
+    }
+  });
 });
