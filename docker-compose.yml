@@ -1,0 +1,49 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mirage-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    env_file:
+      - ./backend/.env
+    volumes:
+      - backend-logs:/app/logs
+      - ./backend/server.log:/app/server.log
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - mirage-network
+
+  frontend:
+    build:
+      context: ./locar_vite
+      dockerfile: Dockerfile
+    container_name: mirage-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    env_file:
+      - ./locar_vite/.env
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - mirage-network
+
+volumes:
+  backend-logs:
+    driver: local
+
+networks:
+  mirage-network:
+    driver: bridge

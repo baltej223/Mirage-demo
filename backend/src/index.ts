@@ -88,7 +88,7 @@ const app = express();
 app.use(cors());
 app.use(pino({ logger }));
 app.use(express.json());
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || "3000", 10);
 const perf = new PerfMonitor();
 
 /**
