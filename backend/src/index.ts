@@ -10,18 +10,45 @@ import logger, { getLogs } from "./logger";
 import cors from "cors";
 import { FieldPath } from "firebase-admin/firestore";
 
-const questions: Record<
-  string,
-  {
-    lat: number;
-    lng: number;
-    question: string;
-    answer: string;
-  }
-  > = {};
+// Distance in meters for valid question interaction
+const VALID_DISTANCE_RADIUS = 50;
 
-const truncateDecimals = (number: number, decimals: number) => 
-  Math.trunc(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
+interface QuestionData {
+  id: string;
+  lat: number;
+  lng: number;
+  question: string;
+  answer: string;
+}
+
+let questionsCache: QuestionData[] = [];
+
+/**
+ * Populates the questionsCache with all questions from Firestore
+ * @returns Promise<void>
+ */
+async function populateQuestionsCache(): Promise<void> {
+  try {
+    logger.info("Populating questions cache...");
+    const snapshot = await db.collection("mirage-locations").get();
+    
+    questionsCache = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        lat: data.location.latitude,
+        lng: data.location.longitude,
+        question: data.question,
+        answer: data.answer,
+      };
+    });
+    
+    logger.info(`Questions cache populated with ${questionsCache.length} questions`);
+  } catch (error) {
+    logger.error({ error }, "Error populating questions cache");
+    throw error;
+  }
+}
 
 class PerfMonitor {
   data: { [key: string]: { avg: number; count: number } };
@@ -135,27 +162,26 @@ app.post(
   perf.middleware("checkAnswer"),
   async (req, res) => {
     const { questionId, answer, lat, lng, user } = req.body;
-    if (!(questionId in questions)) {
-      res.status(404);
-      return res.json({ error: "Not found" });
-    }
-    const data = questions[questionId];
-
-    const questionLocation = data.location;
-    const questionLat = truncateDecimals(questionLocation.latitude, 4);
-    const questionLng = truncateDecimals(questionLocation.longitude, 4);
-    const userLat = truncateDecimals(lat, 4);
-    const userLng = truncateDecimals(lng, 4);
-
-    if (questionLat < userLat - 0.0005 || questionLat > userLat + 0.0005) {
-      res.status(404);
-      return res.json({ error: "Not found" });
-    }
-    if (questionLng < userLng - 0.0005 || questionLng > userLng + 0.0005) {
+    
+    // Find question in cache
+    const question = questionsCache.find((q) => q.id === questionId);
+    if (!question) {
       res.status(404);
       return res.json({ error: "Not found" });
     }
 
+    // Check if user is within valid distance using haversine formula
+    const userCenter: [number, number] = [lat, lng];
+    const questionCenter: [number, number] = [question.lat, question.lng];
+    const distanceInKm = geo.distanceBetween(userCenter, questionCenter);
+    const distanceInM = distanceInKm * 1000;
+
+    if (distanceInM > VALID_DISTANCE_RADIUS) {
+      res.status(404);
+      return res.json({ error: "Not found" });
+    }
+
+    // Get team information
     const teamQuery = await db
       .collection("mirage-teams")
       .where("member_ids", "array-contains", user.userId)
@@ -172,23 +198,25 @@ app.post(
       return res.json({ error: "Not found" });
     }
 
-    for (let i = 0; i < teamData.answered_questions.length; i++) {
-      if (teamData.answered_questions[i] === questionId) {
-        res.status(404);
-        return res.json({ error: "Not found" });
-      }
+    // Check if question was already answered
+    if (teamData.answered_questions.includes(questionId)) {
+      res.status(404);
+      return res.json({ error: "Not found" });
     }
 
-    if (answer.trim().toLowerCase() !== data.answer.trim().toLowerCase()) {
+    // Check if answer is correct
+    if (answer.trim().toLowerCase() !== question.answer.trim().toLowerCase()) {
       res.status(400);
       return res.json({ error: "Incorrect" });
     }
 
+    // Update team points and answered questions
     team?.update({
-      points: firestore.FieldValue.increment(data.points),
+      points: firestore.FieldValue.increment(question.points),
       answered_questions: firestore.FieldValue.arrayUnion(questionId),
     });
-    if (data.points > 10) {
+    
+    if (question.points > 10) {
       // questionRef.update({
       //   points: firestore.FieldValue.increment(-10),
       // });
@@ -229,40 +257,67 @@ app.post(
   perf.middleware("getTarget"),
   async (req, res) => {
     const { lat, lng, user } = req.body;
-    const center = [lat, lng];
-    
-    const userLat = truncateDecimals(lat, 4);
-    const userLng = truncateDecimals(lng, 4);
+    const userCenter: [number, number] = [lat, lng];
 
-    const questions = [] as any[];
-    const promises = [] as Promise<firestore.QuerySnapshot<firestore.DocumentData>>[];
+    // Filter questions within radius using haversine distance
+    const nearbyQuestions = questionsCache.filter((question) => {
+      const questionCenter: [number, number] = [question.lat, question.lng];
+      const distanceInKm = geo.distanceBetween(userCenter, questionCenter);
+      const distanceInM = distanceInKm * 1000;
+      
+      return distanceInM <= VALID_DISTANCE_RADIUS;
+    });
 
-    
-
-    const snapshots = await Promise.all(promises);
-    snapshots.forEach((x) => questions.push(...x.docs));
     res.json({
-      questions: questions.map((doc) => ({
-        id: doc._ref._path.segments[1],
-        title: doc._fieldsProto.title.stringValue,
-        question: doc._fieldsProto.question.stringValue,
-        lat: doc._fieldsProto.location.geoPointValue.latitude,
-        lng: doc._fieldsProto.location.geoPointValue.longitude,
+      questions: nearbyQuestions.map((q) => ({
+        id: q.id,
+        title: q.title,
+        question: q.question,
+        lat: q.lat,
+        lng: q.lng,
       })),
     });
   },
 );
 
+/**
+ * @route GET /api/refreshCache
+ * @summary Manually refresh the questions cache
+ * @description
+ * This route allows authenticated users to refresh the in-memory questions cache
+ * without restarting the server. Useful when new questions are added to Firestore.
+ * Requires a valid userId in the query parameters for authentication.
+ *
+ * @param {string} query.userId - User ID for authentication (28 characters)
+ *
+ * @returns {object} 200 - { message: "Cache refreshed successfully", count: number }
+ * @returns {object} 400 - Validation error if userId is invalid
+ * @returns {object} 500 - Error if cache refresh fails
+ */
+app.get("/api/refreshCache", async (req, res) => {
+  try {
+    const { userId } = req.query;
+    
+    // Simple authentication check
+    if (!userId || typeof userId !== "string" || userId.length !== 28) {
+      res.status(400);
+      return res.json({ error: "Valid userId required for authentication" });
+    }
+    
+    await populateQuestionsCache();
+    
+    res.json({
+      message: "Cache refreshed successfully",
+      count: questionsCache.length,
+    });
+  } catch (error) {
+    logger.error({ error }, "Error refreshing cache");
+    res.status(500);
+    return res.json({ error: "Failed to refresh cache" });
+  }
+});
+
 app.listen(PORT, async () => {
   logger.info(`${PORT} is now in use`);
-
-  const rawquestions = ((await db.collection('mirage-locations').get()).docs);
-  rawquestions.forEach(x => {
-    questions[x.id] = {
-      lat: x.data().location.latitude,
-      lng: x.data().location.longitude,
-      question: x.data().question,
-      answer: x.data().answer
-    }
-  });
+  await populateQuestionsCache();
 });
