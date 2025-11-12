@@ -3,6 +3,7 @@ import * as LocAR from "locar";
 import { queryWithinRadius } from "../services/firestoreGeoQuery";
 import type { NearbyMirage } from "../services/firestoreGeoQuery";
 import type { User } from "firebase/auth";
+import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader.js";
 
 const QUERY_THROTTLE_MS = 5000;
 
@@ -13,7 +14,8 @@ export class MirageARManager {
   private locar!: LocAR.LocationBased;
   private cam!: LocAR.Webcam;
   private deviceOrientationControls!: LocAR.DeviceOrientationControls;
-  private activeCubes: Map<string, THREE.Mesh> = new Map(); // Track by doc ID
+  // private activeCubes: Map<string, THREE.Mesh> = new Map(); // Track by doc ID
+  private activeCubes: Map<string, THREE.Group> = new Map();
   private lastQueryTime = 0;
   private currentUserPos: { lat: number; lng: number } | null = null;
   private container: HTMLElement;
@@ -126,14 +128,21 @@ export class MirageARManager {
       useMockData: false
     });
 
-    const geom = new THREE.BoxGeometry(3, 3, 3); 
+    const loader = new GLTFLoader();
+    // const geom = new THREE.BoxGeometry(3, 3, 3); // you can keep this if other code needs it
+
     this.mirages.forEach((loc) => {
-      const material = new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff });
-      const mesh = new THREE.Mesh(geom, material);
-      mesh.userData = loc;
-      this.locar.add(mesh, loc.lng, loc.lat);
-      this.activeCubes.set(loc.id, mesh);
-    })
+      loader.load('/models/minecraft_chest.glb', (gltf) => {
+        const model = gltf.scene.clone();   // clone so each loc gets its own instance
+        model.userData = loc;               // keep your metadata
+
+        model.scale.set(1, 1, 1);           // optional
+        model.rotation.set(0, 0, 0);        // optional
+
+        this.locar.add(model, loc.lng, loc.lat);
+        this.activeCubes.set(loc.id, model);
+      });
+    });
 
     this.lastQueryTime = Date.now();
   }
@@ -152,7 +161,13 @@ export class MirageARManager {
     if (intersects.length > 0) {
       const mesh = intersects[0].object as THREE.Mesh;
 
-      const clicked = [...this.activeCubes.entries()].find(([_, m]) => m === mesh);
+      const clicked = [...this.activeCubes.entries()].find(([_, group]) => {
+        let found = false;
+        group.traverse((child) => {
+          if (child === mesh) found = true;
+        });
+        return found;
+      });
       if (clicked) {
         const [id] = clicked;
         this.onCubeClicked(id, mesh);
@@ -168,14 +183,18 @@ export class MirageARManager {
   }
 
   private clearCubes() {
-    this.activeCubes.forEach((mesh) => {
-      this.scene.remove(mesh);
-      mesh.geometry.dispose();
-      if (Array.isArray(mesh.material)) {
-        mesh.material.forEach((mat) => mat.dispose());
-      } else {
-        mesh.material.dispose();
-      }
+    this.activeCubes.forEach((group) => {
+      this.scene.remove(group);
+      group.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach((mat) => mat.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      });
     });
     this.activeCubes.clear();
   }
