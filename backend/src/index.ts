@@ -8,8 +8,10 @@ import * as geo from "geofire-common";
 import pino from "pino-http";
 import logger, { getLogs } from "./logger";
 import cors from "cors";
+import { FieldPath } from "firebase-admin/firestore";
 
-const VALID_DISTANCE_FOR_ANSWERING_IN_KM = 0.6;
+const truncateDecimals = (number: number, decimals: number) => 
+  Math.trunc(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
 
 class PerfMonitor {
   data: { [key: string]: { avg: number; count: number } };
@@ -45,7 +47,7 @@ const getTargetRequestSchema = z.object({
 
 const app = express();
 app.use(cors());
-app.use(pino({ logger }));
+// app.use(pino({ logger }));
 app.use(express.json());
 const PORT = 3000;
 const perf = new PerfMonitor();
@@ -123,10 +125,26 @@ app.post(
   perf.middleware("checkAnswer"),
   async (req, res) => {
     const { questionId, answer, lat, lng, user } = req.body;
+    const questionRef = db.collection("mirage-locations").doc(questionId);
     const data = (
-      await db.collection("mirage-locations").doc(questionId).get()
+      await questionRef.get()
     ).data();
     if (!data) {
+      res.status(404);
+      return res.json({ error: "Not found" });
+    }
+
+    const questionLocation = data.location;
+    const questionLat = truncateDecimals(questionLocation.latitude, 4);
+    const questionLng = truncateDecimals(questionLocation.longitude, 4);
+    const userLat = truncateDecimals(lat, 4);
+    const userLng = truncateDecimals(lng, 4);
+
+    if (questionLat < userLat - 0.0005 || questionLat > userLat + 0.0005) {
+      res.status(404);
+      return res.json({ error: "Not found" });
+    }
+    if (questionLng < userLng - 0.0005 || questionLng > userLng + 0.0005) {
       res.status(404);
       return res.json({ error: "Not found" });
     }
@@ -134,14 +152,13 @@ app.post(
     // AARGH CHECK IF IT IS CORRECT
     const teamQuery = await db
       .collection("mirage-teams")
-      .where("members", "array-contains", user.userId)
+      .where("member_ids", "array-contains", user.userId)
       .get();
     if (teamQuery.empty) {
       res.status(404);
       return res.json({ error: "Team not found" });
     }
     const team = teamQuery?.docs[0]?.ref;
-    // ----- Fetching user's team Fisnished -----
     const teamData = (await team?.get())?.data();
 
     if (!teamData) {
@@ -149,47 +166,35 @@ app.post(
       return res.json({ error: "Not found" });
     }
 
-    team?.update({
-      points: firestore.FieldValue.increment(100),
-      answered_questions: firestore.FieldValue.arrayUnion(questionId),
-    });
-
-    // const team = db.collection("mirage-teams").doc(user.teamId);
-    // const teamData = (await team.get()).data();
-    // if (!teamData) {
-    //   res.status(404);
-    //   return res.json({ error: "Not found" });
-    // }
-
-    const questionLocation = [
-      data.location._latitude,
-      data.location._longitude,
-    ] as [number, number];
-    const answeringDistance = geo.distanceBetween(questionLocation, [lat, lng]);
-    if (answeringDistance > VALID_DISTANCE_FOR_ANSWERING_IN_KM) {
-      res.status(404);
-      return res.json({ error: "Not found" });
-    }
-
-    logger.info({ answer, dataAnswer: data.answer }, "Checking answer");
-    if (answer.toLowerCase() != data.answer.toLowerCase()) {
-      res.status(400);
-      return res.json({ error: "Incorrect" });
-    }
-
-    for (const answered_question of teamData.answered_questions) {
-      if (answered_question == questionId) {
+    for (let i = 0; i < teamData.answered_questions.length; i++) {
+      if (teamData.answered_questions[i] === questionId) {
         res.status(404);
         return res.json({ error: "Not found" });
       }
     }
 
+    if (answer.trim().toLowerCase() !== data.answer.trim().toLowerCase()) {
+      res.status(400);
+      return res.json({ error: "Incorrect" });
+    }
+
     team?.update({
-      points: firestore.FieldValue.increment(100),
+      points: firestore.FieldValue.increment(data.points),
       answered_questions: firestore.FieldValue.arrayUnion(questionId),
     });
+    if (data.points > 10) {
+      questionRef.update({
+        points: firestore.FieldValue.increment(-10),
+      });
+    }
 
-    return res.json({});
+    const nextQuestion = await db.collection("mirage-locations")
+      .where(FieldPath.documentId(), "not-in", [...teamData.answered_questions, questionId])
+      .limit(1).get();
+
+    return res.json({
+      nextHint: nextQuestion.empty ? "You have answered all available questions!" : nextQuestion.docs[0]!.data().hint,
+    });
   },
 );
 
@@ -219,25 +224,15 @@ app.post(
   async (req, res) => {
     const { lat, lng, user } = req.body;
     const center = [lat, lng];
-    const radiusInM = VALID_DISTANCE_FOR_ANSWERING_IN_KM * 1000;
+    
+    const userLat = truncateDecimals(lat, 4);
+    const userLng = truncateDecimals(lng, 4);
 
     const questions = [] as any[];
+    const promises = [] as Promise<firestore.QuerySnapshot<firestore.DocumentData>>[];
 
-    // @ts-ignore
-    const bounds = geo.geohashQueryBounds(center, radiusInM);
-    const promises = [];
-    for (const b of bounds) {
-      promises.push(
-        db
-          .collection("mirage-locations")
-          .orderBy("geohash")
-          .startAt(b[0])
-          .endAt(b[1])
-          .get(),
-      );
-    }
+    
 
-    // Collect all the query results together into a single list
     const snapshots = await Promise.all(promises);
     snapshots.forEach((x) => questions.push(...x.docs));
     res.json({

@@ -90,6 +90,7 @@ export class MirageARManager {
       alert("Turn on location services, Error: " + error);
     });
     this.locar.on("gpsupdate", (ev) => {
+      console.log(ev);
       this.ev = ev;
       this.handleGpsUpdate(ev);
     });

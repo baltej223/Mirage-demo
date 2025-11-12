@@ -41,6 +41,7 @@ async function migrateMirageTeams() {
         // Initialize the new fields required by the Team interface
         points: 0,
         answered_questions: [],
+        member_ids: data.members.map((member) => member.userId), // Extract member IDs
       };
 
       // Optional: Log the resulting data structure before batching
