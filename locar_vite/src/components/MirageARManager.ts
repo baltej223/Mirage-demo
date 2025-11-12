@@ -99,7 +99,7 @@ export class MirageARManager {
 
     // GPS Events
     this.locar.on("gpserror", (error) => {
-      alert("Turn on location services");
+      alert("Turn on location services, The error received was: " + error);
     });
     this.locar.on("gpsupdate", (ev) => {
       console.log(ev);
