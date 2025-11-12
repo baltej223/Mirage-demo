@@ -50,11 +50,11 @@ export class MirageARManager {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.container.appendChild(this.renderer.domElement);
 
-    this.renderer.domElement.addEventListener("touchstart", (event) => {
-      this.handleClick(event.touches[0]);
+    this.renderer.domElement.addEventListener("pointerdown", (event) => {
+      this.handleClick(event);
     });
 
-    // after `this.scene = new THREE.Scene();`
+    // // after `this.scene = new THREE.Scene();`
     // const ambient = new THREE.AmbientLight(0xffffff, 0.6);
     // this.scene.add(ambient);
 
@@ -62,10 +62,24 @@ export class MirageARManager {
     // dir.position.set(5, 10, 7.5);
     // this.scene.add(dir);
 
-
     // Scene & LocAR
     this.scene = new THREE.Scene();
     this.locar = new LocAR.LocationBased(this.scene, this.camera)
+
+
+
+    // -- Minimal lighting so PBR materials (glb) show up (they were black before)
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+    this.scene.add(hemi);
+
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(5, 10, 7.5);
+    dir.castShadow = true;
+    this.scene.add(dir);
+
+    // Better color / texture handling for GLTF textures
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+
 
     // Webcam (no explicit start; events trigger auto-init)
     this.cam = new LocAR.Webcam({ video: { facingMode: "environment" } });
@@ -176,7 +190,7 @@ export class MirageARManager {
     this.lastQueryTime = Date.now();
   }
 
-  private handleClick(event: MouseEvent | Touch) {
+  private handleClick(event: PointerEvent) {
     const rect = this.renderer.domElement.getBoundingClientRect();
 
     this.clickVector.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;

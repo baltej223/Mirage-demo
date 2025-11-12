@@ -45,7 +45,7 @@ interface MirageQueryOptions {
   useMockData?: boolean;
 }
 
-const BACKEND_DOMAIN = "http://10.223.141.252:3000";
+const BACKEND_DOMAIN = "https://6a5670e5b443.ngrok-free.app/";
 
 export async function queryWithinRadius(mirages: Map<string, NearbyMirage>, {
   center,

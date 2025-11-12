@@ -23,11 +23,11 @@ function App() {
         <Route
           path="/"
           element={
-            <ProtectedRoute>
-              <>
-                <MirageARView />
-              </>
-            </ProtectedRoute>
+        <ProtectedRoute>
+          <>
+            <MirageARView />
+          </>
+        </ProtectedRoute>
           }
         />
       </Routes>
