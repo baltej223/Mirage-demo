@@ -31,7 +31,7 @@ async function populateQuestionsCache(): Promise<void> {
   try {
     logger.info("Populating questions cache...");
     const snapshot = await db.collection("mirage-locations").get();
-    
+
     questionsCache = snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
@@ -42,8 +42,10 @@ async function populateQuestionsCache(): Promise<void> {
         answer: data.answer,
       };
     });
-    
-    logger.info(`Questions cache populated with ${questionsCache.length} questions`);
+
+    logger.info(
+      `Questions cache populated with ${questionsCache.length} questions`,
+    );
   } catch (error) {
     logger.error({ error }, "Error populating questions cache");
     throw error;
@@ -162,7 +164,7 @@ app.post(
   perf.middleware("checkAnswer"),
   async (req, res) => {
     const { questionId, answer, lat, lng, user } = req.body;
-    
+
     // Find question in cache
     const question = questionsCache.find((q) => q.id === questionId);
     if (!question) {
@@ -214,30 +216,53 @@ app.post(
     const questionRef = db.collection("mirage-locations").doc(questionId);
     const questionDoc = await questionRef.get();
     const questionData = questionDoc.data();
-    
+
     if (!questionData) {
       res.status(404);
       return res.json({ error: "Not found" });
     }
 
+    // Prepare team info to append to question's teams array
+    const teamAnswerInfo = {
+      teamId: team?.id || "",
+      teamName: teamData.teamName || "Unknown Team",
+      answeredAt: new Date().toISOString(),
+      pointsScored: questionData.points,
+      members: teamData.members || [],
+    };
+
     // Update team points and answered questions
-    team?.update({
-      points: firestore.FieldValue.increment(questionData.points),
-      answered_questions: firestore.FieldValue.arrayUnion(questionId),
+    if (team) {
+      await team.update({
+        points: firestore.FieldValue.increment(questionData.points),
+        answered_questions: firestore.FieldValue.arrayUnion(questionId),
+      });
+    }
+
+    // Append team info to question's teams array
+    await questionRef.update({
+      teams: firestore.FieldValue.arrayUnion(teamAnswerInfo),
     });
-    
+
     if (questionData.points > 10) {
-      questionRef.update({
+      await questionRef.update({
         points: firestore.FieldValue.increment(-10),
       });
     }
 
-    const nextQuestion = await db.collection("mirage-locations")
-      .where(FieldPath.documentId(), "not-in", [...teamData.answered_questions, questionId])
-      .limit(1).get();
+    const nextQuestion = await db
+      .collection("mirage-locations")
+      .where(FieldPath.documentId(), "not-in", [
+        ...teamData.answered_questions,
+        questionId,
+      ])
+      .limit(1)
+      .get();
 
     return res.json({
-      nextHint: nextQuestion.empty ? "You have answered all available questions!" : nextQuestion.docs[0]!.data().hint,
+      nextHint: nextQuestion.empty
+        ? "You have answered all available questions!"
+        : nextQuestion.docs[0]!.data().hint,
     });
   },
 );
@@ -274,7 +299,7 @@ app.post(
       const questionCenter: [number, number] = [question.lat, question.lng];
       const distanceInKm = geo.distanceBetween(userCenter, questionCenter);
       const distanceInM = distanceInKm * 1000;
-      
+
       return distanceInM <= VALID_DISTANCE_RADIUS;
     });
 
@@ -290,7 +315,7 @@ app.post(
           lat: q.lat,
           lng: q.lng,
         };
-      })
+      }),
     );
 
     res.json({
@@ -316,15 +341,15 @@ app.post(
 app.get("/api/refreshCache", async (req, res) => {
   try {
     const { userId } = req.query;
-    
+
     // Simple authentication check
     if (!userId || typeof userId !== "string" || userId.length !== 28) {
       res.status(400);
       return res.json({ error: "Valid userId required for authentication" });
     }
-    
+
     await populateQuestionsCache();
-    
+
     res.json({
       message: "Cache refreshed successfully",
       count: questionsCache.length,

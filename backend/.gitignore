@@ -2,3 +2,4 @@ node_modules
 serviceAccountKey.json
 .env
 src/questions.ts
+mirageQuestions.json.bak

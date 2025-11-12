@@ -1,4 +1,22 @@
 import db from "../firebase.js";
+import readline from "readline";
+
+/**
+ * Prompts user for confirmation before proceeding
+ */
+function askConfirmation(question) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.toLowerCase() === "yes" || answer.toLowerCase() === "y");
+    });
+  });
+}
 
 /**
  * Migrates documents from 'teamRegistrations' where eventId is 'mirage'
@@ -65,5 +83,28 @@ async function migrateMirageTeams() {
   }
 }
 
-// Execute the migration function
-migrateMirageTeams();
+// Execute the migration function with confirmation
+(async () => {
+  console.log("\n⚠️  WARNING: This script will:");
+  console.log("  1. Read all team registrations where eventId = 'mirage'");
+  console.log("  2. WRITE/OVERWRITE data to 'mirage-teams' collection");
+  console.log("  3. Initialize points=0 and answered_questions=[] for all teams\n");
+  
+  const confirmed = await askConfirmation(
+    "Are you sure you want to continue? (yes/no): "
+  );
+
+  if (!confirmed) {
+    console.log("\n❌ Operation cancelled.");
+    process.exit(0);
+  }
+
+  console.log("\n✓ Confirmed. Proceeding...\n");
+
+  await migrateMirageTeams();
+  console.log("Script completed successfully.");
+  process.exit(0);
+})().catch((error) => {
+  console.error("Script failed:", error);
+  process.exit(1);
+});
