@@ -9,6 +9,9 @@ import pino from "pino-http";
 import logger, { getLogs } from "./logger";
 import cors from "cors";
 import { FieldPath } from "firebase-admin/firestore";
+import questions from "./questions";
+import fs from 'fs';
+import path from "path";
 
 const truncateDecimals = (number: number, decimals: number) => 
   Math.trunc(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
@@ -65,6 +68,22 @@ app.get("/", (req, res) => {
     ...perf.data,
   });
 });
+
+app.get('/wdakjfchaefvhskejhjkh', async (_, res) => {
+  const questions = ((await db.collection('mirage-locations').get()).docs);
+  const map: Record<string, { lat: number; lng: number; question: string; answer: string }> = {};
+  questions.forEach(x => {
+    map[x.id] = {
+      lat: x.data().location.latitude,
+      lng: x.data().location.longitude,
+      question: x.data().question,
+      answer: x.data().answer
+    }
+  });
+  fs.writeFile(path.join(__dirname, 'questions.ts'), "export default " + JSON.stringify(map, null, 2), () => {
+    res.json({ status: 'done' });
+  });
+})
 
 /**
  * @route GET /logs
@@ -125,14 +144,11 @@ app.post(
   perf.middleware("checkAnswer"),
   async (req, res) => {
     const { questionId, answer, lat, lng, user } = req.body;
-    const questionRef = db.collection("mirage-locations").doc(questionId);
-    const data = (
-      await questionRef.get()
-    ).data();
-    if (!data) {
+    if (!(questionId in questions)) {
       res.status(404);
       return res.json({ error: "Not found" });
     }
+    const data = questions[questionId];
 
     const questionLocation = data.location;
     const questionLat = truncateDecimals(questionLocation.latitude, 4);
@@ -149,7 +165,6 @@ app.post(
       return res.json({ error: "Not found" });
     }
 
-    // AARGH CHECK IF IT IS CORRECT
     const teamQuery = await db
       .collection("mirage-teams")
       .where("member_ids", "array-contains", user.userId)
