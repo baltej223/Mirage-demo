@@ -210,16 +210,26 @@ app.post(
       return res.json({ error: "Incorrect" });
     }
 
+    // Fetch current question data from Firestore for dynamic fields (points, etc.)
+    const questionRef = db.collection("mirage-locations").doc(questionId);
+    const questionDoc = await questionRef.get();
+    const questionData = questionDoc.data();
+    
+    if (!questionData) {
+      res.status(404);
+      return res.json({ error: "Not found" });
+    }
+
     // Update team points and answered questions
     team?.update({
-      points: firestore.FieldValue.increment(question.points),
+      points: firestore.FieldValue.increment(questionData.points),
       answered_questions: firestore.FieldValue.arrayUnion(questionId),
     });
     
-    if (question.points > 10) {
-      // questionRef.update({
-      //   points: firestore.FieldValue.increment(-10),
-      // });
+    if (questionData.points > 10) {
+      questionRef.update({
+        points: firestore.FieldValue.increment(-10),
+      });
     }
 
     const nextQuestion = await db.collection("mirage-locations")
@@ -268,14 +278,23 @@ app.post(
       return distanceInM <= VALID_DISTANCE_RADIUS;
     });
 
+    // Fetch dynamic data (title) from Firestore for nearby questions
+    const questionsWithDetails = await Promise.all(
+      nearbyQuestions.map(async (q) => {
+        const doc = await db.collection("mirage-locations").doc(q.id).get();
+        const data = doc.data();
+        return {
+          id: q.id,
+          title: data?.title || "",
+          question: q.question,
+          lat: q.lat,
+          lng: q.lng,
+        };
+      })
+    );
+
     res.json({
-      questions: nearbyQuestions.map((q) => ({
-        id: q.id,
-        title: q.title,
-        question: q.question,
-        lat: q.lat,
-        lng: q.lng,
-      })),
+      questions: questionsWithDetails,
     });
   },
 );
