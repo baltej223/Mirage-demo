@@ -1,4 +1,4 @@
-import db from "../dist/firebase.js";
+import db from "../src/firebase.ts";
 import { writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -54,7 +54,7 @@ async function mirageBackupAndResetQuestions() {
     });
 
     // 3. Write backup file
-    const backupPath = join(__dirname, "..", "mirageQuestions.json.bak");
+    const backupPath = join(__dirname, "..", "scripts", "mirageQuestions.json.bak");
     writeFileSync(backupPath, JSON.stringify(backupData, null, 2), "utf8");
     console.log(`Backup written to: ${backupPath}`);
 

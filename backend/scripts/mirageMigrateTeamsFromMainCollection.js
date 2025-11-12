@@ -1,5 +1,48 @@
-import db from "../firebase.js";
+import db from "../src/firebase.ts";
 import readline from "readline";
+import { writeFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+/**
+ * Backs up the entire mirage-teams collection to mirageTeans.json.bak
+ */
+async function backupMirageTeams() {
+  console.log("Creating backup of mirage-teams collection...");
+  
+  try {
+    const collectionRef = db.collection("mirage-teams");
+    const snapshot = await collectionRef.get();
+    
+    if (snapshot.empty) {
+      console.log("No existing teams found in mirage-teams collection (collection is empty).");
+      return;
+    }
+
+    console.log(`Found ${snapshot.size} teams to backup.`);
+
+    // Prepare backup data
+    const backupData = [];
+    snapshot.forEach((doc) => {
+      backupData.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    // Write backup file
+    const backupPath = join(__dirname, "..", "mirageTeans.json.bak");
+    writeFileSync(backupPath, JSON.stringify(backupData, null, 2), "utf8");
+    console.log(`✓ Backup written to: ${backupPath}`);
+    console.log(`✓ Backed up ${backupData.length} teams.\n`);
+  } catch (error) {
+    console.error("Backup failed:", error);
+    throw error;
+  }
+}
 
 /**
  * Prompts user for confirmation before proceeding
@@ -26,6 +69,9 @@ function askConfirmation(question) {
  * ('teamRegistrations') and will NOT delete or modify any source documents.
  */
 async function migrateMirageTeams() {
+  // First, backup the existing mirage-teams collection
+  await backupMirageTeams();
+
   console.log("Starting 'mirage' team registration migration...");
 
   // Assuming 'db' is initialized using the Firebase Admin SDK or modular Web SDK
@@ -86,9 +132,10 @@ async function migrateMirageTeams() {
 // Execute the migration function with confirmation
 (async () => {
   console.log("\n⚠️  WARNING: This script will:");
-  console.log("  1. Read all team registrations where eventId = 'mirage'");
-  console.log("  2. WRITE/OVERWRITE data to 'mirage-teams' collection");
-  console.log("  3. Initialize points=0 and answered_questions=[] for all teams\n");
+  console.log("  1. Backup existing 'mirage-teams' collection to mirageTeans.json.bak");
+  console.log("  2. Read all team registrations where eventId = 'mirage'");
+  console.log("  3. WRITE/OVERWRITE data to 'mirage-teams' collection");
+  console.log("  4. Initialize points=0 and answered_questions=[] for all teams\n");
   
   const confirmed = await askConfirmation(
     "Are you sure you want to continue? (yes/no): "
