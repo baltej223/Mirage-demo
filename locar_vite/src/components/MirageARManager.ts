@@ -3,7 +3,7 @@ import * as LocAR from "locar";
 import { queryWithinRadius } from "../services/firestoreGeoQuery";
 import type { NearbyMirage } from "../services/firestoreGeoQuery";
 import type { User } from "firebase/auth";
-import {GLTFLoader} from "three/examples/jsm/loaders/GLTFLoader.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 const QUERY_THROTTLE_MS = 5000;
 
@@ -21,12 +21,12 @@ export class MirageARManager {
   private container: HTMLElement;
   private raycaster = new THREE.Raycaster();
   private clickVector = new THREE.Vector2();
-  private onCubeClick?: (cubeData: NearbyMirage, ev:any) => void;
+  private onCubeClick?: (cubeData: NearbyMirage, ev: any) => void;
   private user: User | null;
   public ev: any;
   private mirages: Map<string, NearbyMirage>;
 
-  constructor(container: HTMLElement, onCubeClick?: (cubeData: NearbyMirage, ev:any) => void, user: User | null = null) {
+  constructor(container: HTMLElement, onCubeClick?: (cubeData: NearbyMirage, ev: any) => void, user: User | null = null) {
     this.container = container;
     this.onCubeClick = onCubeClick;
     this.user = user;
@@ -53,6 +53,14 @@ export class MirageARManager {
     this.renderer.domElement.addEventListener("touchstart", (event) => {
       this.handleClick(event.touches[0]);
     });
+
+    // after `this.scene = new THREE.Scene();`
+    // const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    // this.scene.add(ambient);
+
+    // const dir = new THREE.DirectionalLight(0xffffff, 0.6);
+    // dir.position.set(5, 10, 7.5);
+    // this.scene.add(dir);
 
 
     // Scene & LocAR
@@ -133,15 +141,36 @@ export class MirageARManager {
 
     this.mirages.forEach((loc) => {
       loader.load('/models/minecraft_chest.glb', (gltf) => {
-        const model = gltf.scene.clone();   // clone so each loc gets its own instance
-        model.userData = loc;               // keep your metadata
+        const model = gltf.scene.clone();
+        // attach metadata to every mesh child (so raycast hit has userData)
+        model.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            const mesh = child as THREE.Mesh;
+            // attach the mirage data directly to mesh so the intersect returns it
+            mesh.userData = loc;
 
-        model.scale.set(1, 1, 1);           // optional
-        model.rotation.set(0, 0, 0);        // optional
+            // ensure materials are unique clones (prevents shared-material surprises)
+            if (Array.isArray(mesh.material)) {
+              mesh.material = mesh.material.map(m => (m as THREE.Material).clone());
+            } else if (mesh.material) {
+              mesh.material = (mesh.material as THREE.Material).clone();
+            }
+            // flag for safety
+            (mesh.material as any).needsUpdate = true;
 
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+          }
+        });
+
+        // also keep it on the group (nice to have)
+        model.userData = loc;
+
+        model.scale.set(1, 1, 1);
         this.locar.add(model, loc.lng, loc.lat);
         this.activeCubes.set(loc.id, model);
       });
+
     });
 
     this.lastQueryTime = Date.now();
@@ -156,7 +185,7 @@ export class MirageARManager {
     this.raycaster.setFromCamera(this.clickVector, this.camera);
 
     const meshes = Array.from(this.activeCubes.values());
-    const intersects = this.raycaster.intersectObjects(meshes, false);
+    const intersects = this.raycaster.intersectObjects(meshes, true);
 
     if (intersects.length > 0) {
       const mesh = intersects[0].object as THREE.Mesh;
@@ -175,12 +204,17 @@ export class MirageARManager {
     }
   }
 
-  private onCubeClicked(id: string, mesh: THREE.Mesh) {
-    console.log("Cube clicked:", id);
-    const cubeData = mesh.userData as NearbyMirage;
-    // console.log(JSON.stringify(cubeData));
-    this.onCubeClick?.(cubeData, this.ev);
+private onCubeClicked(id: string, mesh: THREE.Mesh) {
+  console.log("Cube clicked:", id);
+  // mesh.userData should exist (we set it above). Fallback to parent group if needed:
+  let data = mesh.userData as NearbyMirage | undefined;
+  if (!data) {
+    let node: THREE.Object3D | null = mesh;
+    while (node && !node.userData?.id) node = node.parent;
+    data = node?.userData as NearbyMirage | undefined;
   }
+  if (data) this.onCubeClick?.(data, this.ev);
+}
 
   private clearCubes() {
     this.activeCubes.forEach((group) => {
