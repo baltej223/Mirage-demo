@@ -41,9 +41,13 @@ const MirageARView: React.FC = () => {
       lat: managerRef.current?.ev.position.coords.latitude,
       lng: managerRef.current?.ev.position.coords.longitude,
     })
-    setIsQuestionBoxOpen(false);
-    setSelectedCube(null);
-    alert(reply?.nextHint);
+    if (reply.correct) {
+      setIsQuestionBoxOpen(false);
+      setSelectedCube(null);
+      alert("Next hint: " + reply?.nextHint);
+    } else {
+      alert(reply.message);
+    }
   };
 
   return (

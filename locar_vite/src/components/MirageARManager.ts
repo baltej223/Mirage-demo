@@ -22,11 +22,13 @@ export class MirageARManager {
   private onCubeClick?: (cubeData: NearbyMirage, ev:any) => void;
   private user: User | null;
   public ev: any;
+  private mirages: Map<string, NearbyMirage>;
 
   constructor(container: HTMLElement, onCubeClick?: (cubeData: NearbyMirage, ev:any) => void, user: User | null = null) {
     this.container = container;
     this.onCubeClick = onCubeClick;
     this.user = user;
+    this.mirages = new Map();
     console.log((this.user?.uid));
     this.initAR();
   }
@@ -106,7 +108,6 @@ export class MirageARManager {
   }
 
   private async handleGpsUpdate(ev: any) {
-    console.log("UODA")
     const now = Date.now();
     if (now - this.lastQueryTime < QUERY_THROTTLE_MS) return;
 
@@ -119,21 +120,20 @@ export class MirageARManager {
 
     if (!this.currentUserPos) return;
     console.log(this.user?.uid);
-    const nearby = await queryWithinRadius({
+    await queryWithinRadius(this.mirages, {
       center: this.currentUserPos,
-      // teamId: "baltej_idhar_teamId_dal",
       userId: this.user?.uid || "user-is-useless",
       useMockData: false
     });
 
     const geom = new THREE.BoxGeometry(3, 3, 3); 
-    for (const loc of nearby) {
+    this.mirages.forEach((loc) => {
       const material = new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff });
       const mesh = new THREE.Mesh(geom, material);
       mesh.userData = loc;
       this.locar.add(mesh, loc.lng, loc.lat);
       this.activeCubes.set(loc.id, mesh);
-    }
+    })
 
     this.lastQueryTime = Date.now();
   }

@@ -86,7 +86,7 @@ const getTargetRequestSchema = z.object({
 
 const app = express();
 app.use(cors());
-// app.use(pino({ logger }));
+app.use(pino({ logger }));
 app.use(express.json());
 const PORT = 3000;
 const perf = new PerfMonitor();
@@ -361,7 +361,7 @@ app.get("/api/refreshCache", async (req, res) => {
   }
 });
 
-app.listen(PORT, async () => {
+app.listen(PORT, '0.0.0.0', async () => {
   logger.info(`${PORT} is now in use`);
   await populateQuestionsCache();
 });

@@ -45,28 +45,25 @@ interface MirageQueryOptions {
   useMockData?: boolean;
 }
 
-const BACKEND_DOMAIN = "http://localhost:3000";
+const BACKEND_DOMAIN = "http://10.223.141.252:3000";
 
-
-export async function queryWithinRadius({
+export async function queryWithinRadius(mirages: Map<string, NearbyMirage>, {
   center,
   // teamId,
   userId,
   useMockData = true,
-}: MirageQueryOptions): Promise<NearbyMirage[]> {
+}: MirageQueryOptions): Promise<void> {
   const endpoint = "/api/getTarget";
   try {
     if (useMockData) {
       const centerPoint: [number, number] = [center.lat, center.lng];
-      const matches: NearbyMirage[] = [];
 
       for (const m of MOCK_MIRAGES) {
         const distM = distanceBetween([m.lat, m.lng], centerPoint) * 1000;
         if (distM <= 25) {
-          matches.push({ ...m });
+          if (!mirages.get(m.id)) mirages.set(m.id, m);
         }
       }
-      return matches;
     }
 
     const payload = {
@@ -90,15 +87,16 @@ export async function queryWithinRadius({
     }
 
     const data = await response.json();
-    const finalList: NearbyMirage[] = data.questions ?? [];
 
+    for (let i = 0; i < data.questions; i++) {
+      const question = data.questions[i] as NearbyMirage;
+      if (!mirages.get(question.id)) mirages.set(question.id, question);
+    }
     console.log(
-      `API returned ${finalList.length} mirage(s)`,
+      `API returned ${data.questions.length} mirage(s)`,
     );
-    return finalList;
   } catch (err) {
     console.error("Mirage API error:", err);
-    return [];
   }
 }
 
@@ -109,9 +107,12 @@ export async function checkAnswer({ questionId, answer, userId, lat, lng }: {
   lat: number;
   lng: number
 }): Promise<{
-  correct: boolean;
+  correct: false;
   message: string;
-  nextHint?: string;
+} | {
+  correct: true;
+  message: string;
+  nextHint: string;
 }> {
     const response = await fetch(BACKEND_DOMAIN + "/api/checkAnswer", {
       method: "POST",
@@ -130,5 +131,5 @@ export async function checkAnswer({ questionId, answer, userId, lat, lng }: {
     });
     const body = await response.json();
     if (response.ok) return { correct: true, message: "Correct Answer", nextHint: body.nextHint };
-    return { correct: false, message: body.error};
+    return { correct: false, message: body.error };
 }
