@@ -37,7 +37,7 @@ const MirageARView: React.FC = () => {
     let reply = await checkAnswer({
       questionId,
       answer,
-      userId: user?.uid ?? "user-key-mkc"
+      userId: user?.uid ?? "user-key-mkc",
       lat: managerRef.current?.ev.position.coords.latitude,
       lng: managerRef.current?.ev.position.coords.longitude,
     })
