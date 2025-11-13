@@ -380,6 +380,22 @@ app.get("/api/refreshCache", async (req, res) => {
   }
 });
 
+app.get(
+  "/api/leaderboard",
+  perf.middleware("leaderboard"),
+  async (req, res) => {
+    logger.info(`/api/leaderboard`);
+    const teams = await db.collection('mirage-teams').orderBy('points').limit(10).get();
+    const docs = teams.docs.map(x => x.data());
+    res.json({
+      teams: docs.map(x => ({
+        name: x.teamName,
+        points: x.points,
+      })),
+    });
+  }
+) 
+
 app.listen(PORT, '0.0.0.0', async () => {
   logger.info(`${PORT} is now in use`);
   await populateQuestionsCache();
