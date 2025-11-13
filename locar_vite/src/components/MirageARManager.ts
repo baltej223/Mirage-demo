@@ -69,7 +69,7 @@ export class MirageARManager {
 
 
     // -- Minimal lighting so PBR materials (glb) show up (they were black before)
-    const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 4);
     this.scene.add(hemi);
 
     const dir = new THREE.DirectionalLight(0xffffff, 0.8);

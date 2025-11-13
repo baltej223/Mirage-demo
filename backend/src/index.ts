@@ -80,12 +80,6 @@ class PerfMonitor {
   }
 }
 
-const getTargetRequestSchema = z.object({
-  lat: z.float64(),
-  lng: z.float64(),
-  user: User,
-});
-
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -298,6 +292,11 @@ app.post(
  *   ]
  * }
  */
+const getTargetRequestSchema = z.object({
+  lat: z.float64(),
+  lng: z.float64(),
+  user: User,
+});
 app.post(
   "/api/getTarget",
   validatePOSTBody(getTargetRequestSchema),
