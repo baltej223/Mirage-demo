@@ -8,14 +8,28 @@ import type { NearbyMirage } from '../services/firestoreGeoQuery';
 import { useAuth } from '../context/AuthContext';
 // import type { User } from "firebase/auth";
 
+interface UserPosition {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  timestamp: number;
+}
+
 const MirageARView: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const managerRef = useRef<MirageARManager | null>(null);
+  const currentPositionRef = useRef<UserPosition | null>(null);
   const [selectedCube, setSelectedCube] = useState<NearbyMirage | null>(null);
   const [isQuestionBoxOpen, setIsQuestionBoxOpen] = useState(false);
   const { user } = useAuth();
 
   const handleCubeClick = (cubeData: NearbyMirage) => {
+    console.log('[AR] Cube selected:', {
+      questionId: cubeData.id,
+      question: cubeData.question,
+      position: { lat: cubeData.lat, lng: cubeData.lng },
+      timestamp: new Date().toISOString()
+    });
     setSelectedCube(cubeData);
     setIsQuestionBoxOpen(true);
   };
@@ -32,32 +46,99 @@ const MirageARView: React.FC = () => {
 
   const handleQuestionBoxClose = async (questionId?: string, answer?: string) => {
     if (questionId == undefined || answer == undefined) return;
-    console.log('Answer:'+ answer + " " + user);
-    console.log('Question ID:'+ questionId);
-    let reply = await checkAnswer({
-      questionId,
-      answer,
-      userId: user?.uid ?? "user-key-mkc",
-      lat: managerRef.current?.ev.position.coords.latitude,
-      lng: managerRef.current?.ev.position.coords.longitude,
-    })
-    if (reply.correct) {
+    
+    // Validate user authentication
+    if (!user?.uid) {
+      console.error('[Error] User not authenticated');
+      alert('You must be logged in to answer questions.');
       setIsQuestionBoxOpen(false);
-      setSelectedCube(null);
-      // alert("Next hint: " + reply?.nextHint);
-      <QuestionBox
-        open={isQuestionBoxOpen}
-        setopen={setIsQuestionBoxOpen}
-        question={reply?.nextHint || "No more hints available."}
-        onClose={() => {
+      return;
+    }
+    
+    // Get current position from AR manager
+    const position = managerRef.current?.ev?.position;
+    
+    // Validate position data
+    if (!position?.coords?.latitude || !position?.coords?.longitude) {
+      console.error('[Error] Position data unavailable');
+      alert('Unable to get your location. Please ensure location services are enabled and try again.');
+      return;
+    }
+    
+    // Store position for reference
+    const userPosition: UserPosition = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+      accuracy: position.coords.accuracy || 999,
+      timestamp: position.timestamp || Date.now()
+    };
+    
+    currentPositionRef.current = userPosition;
+    
+    // Check position age (warn if older than 10 seconds)
+    const positionAge = Date.now() - userPosition.timestamp;
+    if (positionAge > 10000) {
+      console.warn('[Warning] Position data is stale', { ageMs: positionAge });
+    }
+    
+    console.log('[API] Submitting answer:', {
+      questionId,
+      answer: answer.substring(0, 20) + (answer.length > 20 ? '...' : ''), // Log partial answer for privacy
+      userId: user.uid,
+      userPosition: {
+        lat: userPosition.lat,
+        lng: userPosition.lng,
+        accuracy: userPosition.accuracy,
+        age: positionAge
+      },
+      timestamp: new Date().toISOString()
+    });
+    
+    try {
+      let reply = await checkAnswer({
+        questionId,
+        answer,
+        userId: user.uid,
+        lat: userPosition.lat,
+        lng: userPosition.lng,
+      })
+      
+      if (reply.correct) {
+        console.log('[API] Answer correct:', {
+          questionId,
+          nextHint: reply.nextHint,
+          timestamp: new Date().toISOString()
+        });
+        setIsQuestionBoxOpen(false);
+        setSelectedCube(null);
+        alert("✅ Correct! Next hint: " + reply?.nextHint);
+      } else {
+        console.warn('[API] Answer failed:', {
+          questionId,
+          errorType: reply.errorType,
+          message: reply.message,
+          distance: reply.distance,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Keep question box open for certain errors to allow retry
+        if (reply.errorType === "Out of range" || reply.errorType === "Incorrect") {
+          // Show error but keep question box open for retry
+          alert(reply.message);
+        } else {
+          // Close question box for errors that can't be retried
           setIsQuestionBoxOpen(false);
           setSelectedCube(null);
-        }}
-        id={"67"}
-        clueMode={true}
-      />;
-    } else {
-      alert(reply.message);
+          alert(reply.message);
+        }
+      }
+    } catch (error) {
+      console.error('[Error] Exception in handleQuestionBoxClose:', {
+        error,
+        questionId,
+        timestamp: new Date().toISOString()
+      });
+      alert("An unexpected error occurred. Please try again.");
     }
   };
 

@@ -45,7 +45,8 @@ interface MirageQueryOptions {
   useMockData?: boolean;
 }
 
-const BACKEND_DOMAIN = "http://10.223.141.252:3000";
+// Use environment variable with fallback for development
+const BACKEND_DOMAIN = import.meta.env.VITE_BACKEND_URL || "http://10.223.141.252:3000";
 
 export async function queryWithinRadius(mirages: Map<string, NearbyMirage>, {
   center,
@@ -72,7 +73,9 @@ export async function queryWithinRadius(mirages: Map<string, NearbyMirage>, {
       },
       ...center,
     };
-    console.log(BACKEND_DOMAIN + endpoint, 'and payload:', payload.user.userId);
+    if (IS_DEV) {
+      console.log(BACKEND_DOMAIN + endpoint, 'and payload:', payload.user.userId);
+    }
 
     const response = await fetch(BACKEND_DOMAIN + endpoint, {
       method: "POST",
@@ -92,9 +95,6 @@ export async function queryWithinRadius(mirages: Map<string, NearbyMirage>, {
       const question = data.questions[i] as NearbyMirage;
       if (!mirages.get(question.id)) mirages.set(question.id, question);
     }
-    console.log(
-      `API returned ${data.questions.length} mirage(s)`,
-    );
   } catch (err) {
     console.error("Mirage API error:", err);
   }
@@ -109,27 +109,66 @@ export async function checkAnswer({ questionId, answer, userId, lat, lng }: {
 }): Promise<{
   correct: false;
   message: string;
+  errorType?: string;
+  distance?: number;
 } | {
   correct: true;
   message: string;
   nextHint: string;
 }> {
-    const response = await fetch(BACKEND_DOMAIN + "/api/checkAnswer", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        questionId,
-        answer,
-        user: {
-          userId
+    try {
+      const response = await fetch(BACKEND_DOMAIN + "/api/checkAnswer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        lat,
-        lng,
-      }),
-    });
-    const body = await response.json();
-    if (response.ok) return { correct: true, message: "Correct Answer", nextHint: body.nextHint };
-    return { correct: false, message: body.error };
+        body: JSON.stringify({
+          questionId,
+          answer,
+          user: {
+            userId
+          },
+          lat,
+          lng,
+        }),
+      });
+      const body = await response.json();
+      
+      if (response.ok) {
+        return { correct: true, message: "Correct Answer", nextHint: body.nextHint };
+      }
+      
+      // Enhanced error handling with specific error types
+      let message = body.message || body.error || "An error occurred";
+      const errorType = body.error;
+      
+      // Provide user-friendly messages based on error type
+      if (errorType === "Out of range") {
+        message = body.message || `You're too far from the target. Please move closer and try again.`;
+      } else if (errorType === "Already answered") {
+        message = body.message || "Your team has already answered this question.";
+      } else if (errorType === "Team not found") {
+        message = body.message || "You need to be part of a team to answer questions.";
+      } else if (errorType === "Question not found") {
+        message = body.message || "This question is no longer available.";
+      } else if (errorType === "Incorrect") {
+        message = "Incorrect answer. Try again!";
+      } else if (errorType === "Too many requests") {
+        message = body.message || "Please wait a moment before trying again.";
+      }
+      
+      return { 
+        correct: false, 
+        message,
+        errorType,
+        distance: body.distance
+      };
+    } catch (error) {
+      console.error("Network error in checkAnswer:", error);
+      return { 
+        correct: false, 
+        message: "Network error. Please check your connection and try again.",
+        errorType: "Network error"
+      };
+    }
 }

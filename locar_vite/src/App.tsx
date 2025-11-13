@@ -3,6 +3,7 @@ import "./App.css";
 import MirageARView from "./components/MirageARView";
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 import Login from "./components/Login.tsx";
 //import LogoutButton from "./components/LogoutButton.tsx";
@@ -17,21 +18,21 @@ function App() {
 
   if (!mobileAndTabletCheck()) return <div className="w-screen h-screen bg-[#353535] text-white flex items-center justify-center">Please use a mobile phone</div>
   return (
-    <>
+    <ErrorBoundary>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
           path="/"
           element={
-        <ProtectedRoute>
-          <>
-            <MirageARView />
-          </>
-        </ProtectedRoute>
+            <ProtectedRoute>
+              <ErrorBoundary>
+                <MirageARView />
+              </ErrorBoundary>
+            </ProtectedRoute>
           }
         />
       </Routes>
-    </>
+    </ErrorBoundary>
   );
 }
 
