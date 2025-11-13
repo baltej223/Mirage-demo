@@ -64,7 +64,7 @@ async function mirageBackupAndResetQuestions() {
     let resetCount = 0;
 
     snapshot.forEach((doc) => {
-      batch.update(doc.ref, { teams: [] });
+      batch.update(doc.ref, { teams: [], points: 100 });
       resetCount++;
     });
 
