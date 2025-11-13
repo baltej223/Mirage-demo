@@ -10,8 +10,9 @@ import logger, { getLogs } from "./logger";
 import cors from "cors";
 import { FieldPath } from "firebase-admin/firestore";
 
-// Distance in meters for valid question interaction
-const VALID_DISTANCE_RADIUS = 50;
+// Configuration from environment variables with fallback defaults
+const VALID_DISTANCE_RADIUS = parseInt(process.env.VALID_DISTANCE_RADIUS || "50", 10);
+const PORT = parseInt(process.env.PORT || "3000", 10);
 
 interface QuestionData {
   id: string;
@@ -27,7 +28,7 @@ let cacheLastPopulated: Date | null = null;
 // Duplicate submission prevention - stores recent submissions
 // Key format: "userId:questionId", Value: timestamp
 const recentSubmissions = new Map<string, number>();
-const SUBMISSION_COOLDOWN_MS = 3000; // 3 seconds cooldown
+const SUBMISSION_COOLDOWN_MS = parseInt(process.env.SUBMISSION_COOLDOWN_MS || "3000", 10);
 
 /**
  * Populates the questionsCache with all questions from Firestore
@@ -97,7 +98,6 @@ const getTargetRequestSchema = z.object({
 const app = express();
 app.use(cors());
 app.use(express.json());
-const PORT = parseInt(process.env.PORT || "3000", 10);
 const perf = new PerfMonitor();
 
 /**
