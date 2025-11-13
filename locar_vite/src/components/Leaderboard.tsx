@@ -7,7 +7,7 @@ const Login: React.FC = () => {
     (async () => {
       setLeaderboard(await getLeaderboard());
     })();
-  });
+  }, []);
   console.log(leaderboard);
 
   return (
