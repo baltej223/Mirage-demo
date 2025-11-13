@@ -115,114 +115,69 @@ export async function checkAnswer({ questionId, answer, userId, lat, lng }: {
   message: string;
   nextHint: string;
 }> {
-    try {
-      const response = await fetch(BACKEND_DOMAIN + "/api/checkAnswer", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+  try {
+    const response = await fetch(BACKEND_DOMAIN + "/api/checkAnswer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        questionId,
+        answer,
+        user: {
+          userId
         },
-        body: JSON.stringify({
-          questionId,
-          answer,
-          user: {
-            userId
-          },
-          lat,
-          lng,
-        }),
-      });
-      const body = await response.json();
-      
-      if (response.ok) {
-        return { correct: true, message: "Correct Answer", nextHint: body.nextHint };
-      }
-      
-      // Enhanced error handling with specific error types
-      let message = body.message || body.error || "An error occurred";
-      const errorType = body.error;
-      
-      // Provide user-friendly messages based on error type
-      if (errorType === "Out of range") {
-        message = body.message || `You're too far from the target. Please move closer and try again.`;
-      } else if (errorType === "Already answered") {
-        message = body.message || "Your team has already answered this question.";
-      } else if (errorType === "Team not found") {
-        message = body.message || "You need to be part of a team to answer questions.";
-      } else if (errorType === "Question not found") {
-        message = body.message || "This question is no longer available.";
-      } else if (errorType === "Incorrect") {
-        message = "Incorrect answer. Try again!";
-      } else if (errorType === "Too many requests") {
-        message = body.message || "Please wait a moment before trying again.";
-      }
-      
-      return { 
-        correct: false, 
-        message,
-        errorType,
-        distance: body.distance
-      };
-    } catch (error) {
-      console.error("Network error in checkAnswer:", error);
-      return { 
-        correct: false, 
-        message: "Network error. Please check your connection and try again.",
-        errorType: "Network error"
-      };
+        lat,
+        lng,
+      }),
+    });
+    const body = await response.json();
+    
+    if (response.ok) {
+      return { correct: true, message: "Correct Answer", nextHint: body.nextHint };
     }
-    try {
-      const response = await fetch(BACKEND_DOMAIN + "/api/checkAnswer", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          questionId,
-          answer,
-          user: {
-            userId
-          },
-          lat,
-          lng,
-        }),
-      });
-      const body = await response.json();
-      
-      if (response.ok) {
-        return { correct: true, message: "Correct Answer", nextHint: body.nextHint };
-      }
-      
-      // Enhanced error handling with specific error types
-      let message = body.message || body.error || "An error occurred";
-      const errorType = body.error;
-      
-      // Provide user-friendly messages based on error type
-      if (errorType === "Out of range") {
-        message = body.message || `You're too far from the target. Please move closer and try again.`;
-      } else if (errorType === "Already answered") {
-        message = body.message || "Your team has already answered this question.";
-      } else if (errorType === "Team not found") {
-        message = body.message || "You need to be part of a team to answer questions.";
-      } else if (errorType === "Question not found") {
-        message = body.message || "This question is no longer available.";
-      } else if (errorType === "Incorrect") {
-        message = "Incorrect answer. Try again!";
-      } else if (errorType === "Too many requests") {
-        message = body.message || "Please wait a moment before trying again.";
-      }
-      
-      return { 
-        correct: false, 
-        message,
-        errorType,
-        distance: body.distance
-      };
-    } catch (error) {
-      console.error("Network error in checkAnswer:", error);
-      return { 
-        correct: false, 
-        message: "Network error. Please check your connection and try again.",
-        errorType: "Network error"
-      };
+    
+    // Enhanced error handling with specific error types
+    let message = body.message || body.error || "An error occurred";
+    const errorType = body.error;
+    
+    // Provide user-friendly messages based on error type
+    if (errorType === "Out of range") {
+      message = body.message || `You're too far from the target. Please move closer and try again.`;
+    } else if (errorType === "Already answered") {
+      message = body.message || "Your team has already answered this question.";
+    } else if (errorType === "Team not found") {
+      message = body.message || "You need to be part of a team to answer questions.";
+    } else if (errorType === "Question not found") {
+      message = body.message || "This question is no longer available.";
+    } else if (errorType === "Incorrect") {
+      message = "Incorrect answer. Try again!";
+    } else if (errorType === "Too many requests") {
+      message = body.message || "Please wait a moment before trying again.";
     }
+    
+    return { 
+      correct: false, 
+      message,
+      errorType,
+      distance: body.distance
+    };
+  } catch (error) {
+    console.error("Network error in checkAnswer:", error);
+    return { 
+      correct: false, 
+      message: "Network error. Please check your connection and try again.",
+      errorType: "Network error"
+    };
+  }
+}
+
+export async function getLeaderboard(): Promise<{ name: string; points: number }[]> {
+  try {
+    const response = await fetch(BACKEND_DOMAIN + "/api/leaderboard");
+    const body = await response.json();
+    return body.teams as { name: string; points: number }[];
+  } catch {
+    return [];
+  }
 }
